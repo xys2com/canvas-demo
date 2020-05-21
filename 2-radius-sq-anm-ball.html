@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<style>
+  body,html{
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+</style>
+<body>
+  <div id="app">
+    <canvas id="cvs" style="background: #000;"></canvas>
+  </div>
+</body>
+<script>
+  window.$ = (e) => {
+    let t = document.querySelectorAll(e);
+    return t.length > 1 ? t : 1 === t.length ? t[0] : void 0
+  };
+  window.random = function (n, r) {
+    if (arguments.length < 2 && (r = n, n = 0), n > r) {
+      var a = r;
+      r = n, n = a
+    }
+    return Math.floor(Math.random() * (r - n + 1)) + n
+  };
+  let _W = document.documentElement.clientWidth;
+  let _H = document.documentElement.clientHeight;
+  let _Cvs = $("#cvs")
+  _Cvs.setAttribute("width", _W)
+  _Cvs.setAttribute("height", _H)
+  let _Ctx = _Cvs.getContext("2d")
+  /*
+    x y 坐标
+    w h 长宽
+    r 圆角
+  */
+  function roundRect(x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    _Ctx.beginPath();
+    _Ctx.moveTo(x + r, y);
+    _Ctx.arcTo(x + w, y, x + w, y + h, r);
+    _Ctx.arcTo(x + w, y + h, x, y + h, r);
+    _Ctx.arcTo(x, y + h, x, y, r);
+    _Ctx.arcTo(x, y, x + w, y, r);
+    _Ctx.strokeStyle = "#fff"
+    _Ctx.stroke()
+    _Ctx.closePath();
+  }
+  function dot(x, y , r) {
+    _Ctx.beginPath();
+    _Ctx.arc(x,y,r,0,2*Math.PI);
+    // _Ctx.strokeStyle = "#f00"
+    _Ctx.fillStyle="#9cdcfe"
+    _Ctx.fill()
+    // _Ctx.stroke()
+    _Ctx.closePath();
+  }
+  main()
+  var starX = 300 ,starY = 200
+  var width = 200 ,height = 200
+  var deg = 90
+  var radius = 50
+  var speed = 2
+  var degSpeed = deg / radius
+  function main() {
+    // _Ctx.clearRect(0,0,_W,_H)
+    _Ctx.fillStyle = 'rgba(0,0,0,.1)';
+    _Ctx.fillRect(0, 0, _W, _H)
+    if(deg < 0){
+      deg=0
+    } 
+    if(deg > 90){
+      deg = 90
+    }
+    if(starX<(400 - radius)&&starY === 200){
+      starX+= speed
+    }
+    if(starX>=(400 - radius)&&starX<=400&&starY>=200&&starY<=(200 + radius)&&deg>0&&deg<=90){
+      deg-= degSpeed
+      starX =(400 - radius) + Math.abs(Math.cos(Math.PI * 2 / 360 * deg)* radius)
+      starY =200 + (radius-Math.abs( Math.sin(Math.PI * 2 / 360 * deg)* radius))
+    }
+    if(starX === 400&&starY<(400 - radius)){
+      starY+= speed
+    }
+    if(starY>=(400 - radius)&&starY<=400&&starX<=400&&starX>=(400 - radius)&&deg>=0&&deg<90){
+      deg+= degSpeed
+      starX =(400 - radius) + Math.abs(Math.cos(Math.PI * 2 / 360 * deg)* radius)
+      starY =(400 - radius) + (Math.abs( Math.sin(Math.PI * 2 / 360 * deg)* radius))
+    }
+    if(starY===400&&starX >200){
+      starX-= speed
+    }
+    if(starX<=(200 + radius)&&starX>=200&&starY<=400&&starY>=(400 - radius)&&deg>0&&deg<=90){
+      deg-= degSpeed
+      starX = (200 + radius) -  Math.abs(Math.cos(Math.PI * 2 / 360 * deg)* radius)
+      starY = (400 - radius) +  (Math.abs( Math.sin(Math.PI * 2 / 360 * deg)* radius))
+    }
+    if(starX === 200&&starY>200){
+      starY-= speed
+    }
+    if(starY<=(200 + radius)&&starY>=200&&starX>=200&&starX<=(200 + radius)&&deg>=0&&deg<90){
+      deg+= degSpeed
+      starX = (200 + radius) -  Math.abs(Math.cos(Math.PI * 2 / 360 * deg)* radius)
+      starY = (200 + radius) - (Math.abs( Math.sin(Math.PI * 2 / 360 * deg)* radius))
+    }
+    dot(starX, starY , 5)
+    roundRect(200, 200, 200, 200, radius);
+    requestAnimationFrame(main)
+  }
+</script>
+
+</html>

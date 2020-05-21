@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<style>
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    padding: 0px;
+    margin: 0;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    background: #000;
+    color: #fff;
+    text-align: center;
+  }
+
+  * {
+    padding: 0;
+    margin: 0;
+  }
+
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #000
+  }
+</style>
+
+<body>
+  <canvas id="cvs"></canvas>
+</body>
+<script>
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    return el.length === 1 ? el[0] : el
+  }
+  //定义范围内的随机数
+  function random(min, max) {
+    if (arguments.length < 2) {
+      max = min;
+      min = 0;
+    }
+    if (min > max) {
+      var hold = max;
+      max = min;
+      min = hold;
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+</script>
+<script>
+  var BODY_WIDTH, BODY_HEIGHT
+  var CANVAS = $('#cvs')
+  var CTX = CANVAS.getContext('2d')
+  var mousePointerArr = [] // 需要添加小手光标的 四个点
+  var stage_w = 800
+  var stage_h = 800
+  var element_size = 20
+
+  window.onload = function () {
+    init()
+    gameInit()
+    document.onkeydown = (e) => {
+      var keyCode = window.event ? e.keyCode : e.which
+      if (keyCode <= 40 && keyCode >= 37) {
+        if ((snk.o === 37 && keyCode === 39) || (snk.o === 38 && keyCode === 40) || (snk.o === 39 && keyCode ===
+          37) || (snk.o === 40 && keyCode === 38)) {
+          return false
+        }
+        snk.o = keyCode
+      }
+    }
+  }
+
+  function gameInit () {
+    window.playBtn = new Rectangle(BODY_WIDTH / 2, 600, 200, 60, 10, 'P L A Y', true, true, "#FF4351", null, '#ff0')
+    window.stage = new Stage(stage_w, stage_h)
+    window.snk = new Snk()
+    window.fruit = new Fruit()
+    window.playBtn.init()
+  }
+
+  function init() {
+    BODY_WIDTH = $('body').clientWidth
+    BODY_HEIGHT = $('body').clientHeight
+    CANVAS.width = BODY_WIDTH
+    CANVAS.height = BODY_HEIGHT
+  }
+
+  function Stage(w, h) {
+    this.w = w
+    this.h = h
+    this.create = () => {
+      let sx = (BODY_WIDTH - w) / 2
+      let sy = (BODY_HEIGHT - h) / 2
+      CTX.globalAlpha = 1
+      CTX.beginPath()
+      CTX.moveTo(sx, sy)
+      CTX.lineTo(sx + this.w, sy)
+      CTX.lineTo(sx + this.w, sy + this.h)
+      CTX.lineTo(sx, sy + this.h)
+      CTX.lineTo(sx, sy)
+      CTX.strokeStyle = '#eec87e'
+      CTX.stroke()
+    }
+    this.empty = () => {
+      let sx = (BODY_WIDTH - w) / 2
+      let sy = (BODY_HEIGHT - h) / 2
+      let ex = sx + this.w
+      let ey = sy + this.h
+      CTX.shadowOffsetX = 0;
+      CTX.shadowOffsetY = 0;
+      CTX.shadowColor = '';
+      CTX.shadowBlur = 0;
+      CTX.fillStyle=`rgba(0, 0, 0, .5)`
+      CTX.fillRect(sx + 1, sy + 1, this.w - 2, this.h - 2)
+      // CTX.clearRect(sx + 1, sy + 1, this.w - 2, this.h - 2)
+      window.fruit.draw()
+    }
+  }
+
+  window.onmousemove = e => { //
+    let xy = getEventPosition(e)
+    mouseP(xy)
+  }
+  // 矩形
+  function Rectangle(cx, cy, w, h, r, txt = '', p = false, fill = false, fillClr = "#fff", lineClr, ftClr) {
+    let x = w / 2
+    let y = h / 2
+    this.x = cx - w / 2
+    this.y = cy - h / 2
+    this.pw = w
+    this.ph = h
+    this.cx = cx
+    this.cy = cy
+    this.r = r
+    this.w = w
+    this.h = h
+    this.p = p
+    this.ap = 1
+    this.fill = fill
+    this.fillClr = fillClr
+    this.ftPx = 18
+    this.lineClr = lineClr || fillClr
+    this.anmName = 'play'
+    this.init = function () {
+      CTX.clearRect(0, 0, BODY_WIDTH, BODY_HEIGHT)
+      CTX.beginPath()
+      CTX.moveTo(this.x, this.y + this.r)
+      CTX.arc(this.x + this.r, this.y + this.r, this.r, Math.PI, 1.5 * Math.PI)
+      CTX.lineTo(this.x + this.w - this.r, this.y)
+      CTX.arc(this.x + this.w - this.r, this.y + this.r, this.r, 1.5 * Math.PI, 2 * Math.PI)
+      CTX.lineTo(this.x + this.w, this.y + this.h - this.r)
+      CTX.arc(this.x + this.w - this.r, this.y + this.h - this.r, this.r, 0, .5 * Math.PI)
+      CTX.lineTo(this.x + this.r, this.y + this.h)
+      CTX.arc(this.x + this.r, this.y + this.h - this.r, this.r, .5 * Math.PI, Math.PI)
+      CTX.lineTo(this.x, this.y + this.r)
+      CTX.globalAlpha = this.ap
+      CTX.strokeStyle = this.lineClr
+      CTX.stroke()
+      if (this.fill) {
+        CTX.fillStyle = this.fillClr
+        CTX.fill()
+      }
+      if (this.p) {
+        mousePointerArr.push({
+          x: this.x,
+          y: this.y,
+          ex: this.x + this.w,
+          ey: this.y + this.h,
+          key: false,
+          evtName: 'play',
+          obj: this
+        })
+        this.p = false
+      }
+      if (txt !== '') {
+        CTX.font = `${this.ftPx}px bold 黑体`;
+        CTX.fillStyle = ftClr;
+        CTX.textAlign = "center";
+        CTX.textBaseline = "middle";
+        CTX.fillText(txt, this.cx, this.cy);
+      }
+    }
+  }
+
+  var evtArr = { // 事件薄
+    play: () => {
+      let v = 1.05 // 放大率
+      window.playBtn.px = window.playBtn.x
+      window.playBtn.py = window.playBtn.y
+      window.playBtn.w = window.playBtn.w * v
+      window.playBtn.h = window.playBtn.h * v
+      window.playBtn.r = window.playBtn.r * v
+      window.playBtn.ftPx = window.playBtn.ftPx * v
+      window.playBtn.ap = window.playBtn.ap / v / v
+      window.playBtn.x = window.playBtn.cx - window.playBtn.w / 2
+      window.playBtn.y = window.playBtn.cy - window.playBtn.h / 2
+      if (window.playBtn.ap < .2) {
+        window.cancelAnimationFrame(window.playAnm)
+        CTX.clearRect(0, 0, BODY_WIDTH, BODY_HEIGHT)
+        mousePointerArr.splice(mousePointerArr.findIndex(e => e.evtName === window.playBtn.anmName), 1)
+        $('body').style.cursor = 'default'
+        window.stage.create()
+        window.fruit.draw()
+        window.snk.create()
+        window.snk.move()
+        score()
+      } else {
+        window.playBtn.init()
+        window.playAnm = requestAnimationFrame(evtArr[window.playBtn.anmName])
+      }
+    }
+  }
+
+  $('body').onclick = () => { // 调用点击事件
+    mousePointerArr.forEach(e => {
+      if (e.key) {
+        evtArr[e.evtName]()
+        return false
+      }
+    })
+  }
+
+  function mouseP(obj) { // 给某个范围加上小手光标 且能点击
+    if (mousePointerArr.length === 0) {
+      $('body').style.cursor = 'default'
+    } else {
+      mousePointerArr.forEach((e) => {
+        if (obj.x > e.x && obj.x < e.ex && obj.y > e.y && obj.y < e.ey) {
+          $('body').style.cursor = 'pointer'
+          e.key = true
+        } else {
+          $('body').style.cursor = 'default'
+          e.key = false
+        }
+      })
+    }
+  }
+
+  function getEventPosition(ev) { // 获得鼠标坐标
+    var x, y
+    if (ev.layerX || ev.layerX == 0) {
+      x = ev.layerX
+      y = ev.layerY
+    } else if (ev.offsetX || ev.offsetX == 0) {
+      x = ev.offsetX
+      y = ev.offsetY
+    }
+    return {
+      x: x,
+      y: y
+    }
+  }
+
+  function Snk() { // 蛇
+    this.length = 5
+    this.velocity = 1
+    this.lv = 0
+    this.p_lv = 0
+    this.z = .1
+    this.arr = []
+    this.o = 39 // 39向右 40向下 37向左 38向上
+    this.draw = () => {
+      stage.empty()
+      this.arr.forEach(e => {
+        CTX.beginPath()
+        CTX.lineWidth = 1
+        CTX.globalAlpha = 1
+        let el_ct = element_size / 2 - 1
+        
+        CTX.shadowOffsetX = 0;
+        CTX.shadowOffsetY = 0;
+        CTX.shadowColor = '#eec87e';
+        CTX.shadowBlur = 15;
+
+        CTX.moveTo(e.cx - el_ct, e.cy - el_ct)
+        CTX.lineTo(e.cx + el_ct, e.cy - el_ct)
+        CTX.lineTo(e.cx + el_ct, e.cy + el_ct)
+        CTX.lineTo(e.cx - el_ct, e.cy + el_ct)
+        CTX.lineTo(e.cx - el_ct, e.cy - el_ct)
+        CTX.strokeStyle = '#eec87e'
+        CTX.stroke()
+        CTX.fillStyle = '#eec87e'
+        CTX.fill()
+      })
+    }
+    this.create = () => {
+      let sx = BODY_WIDTH / 2 + element_size / 2
+      let sy = BODY_HEIGHT / 2 + element_size / 2
+      for (let i = 0; i < this.length; i++) {
+        this.arr.push({
+          cx: sx - i * element_size,
+          cy: sy,
+          o: 0
+        })
+      }
+      this.draw()
+    }
+    this.move = () => { // 移动方法
+      window.snkMove = setInterval(() => {
+        for (let i = this.arr.length - 1; i > 0; i--) {
+          this.arr[i] = this.arr[i - 1]
+        }
+        this.arr[0] = getNextPosition(this.o, this.arr[0])
+        /*游戏结束判断*/
+        let b_x1 = (BODY_WIDTH - stage.w) / 2 - 1
+        let b_x2 = (BODY_WIDTH - stage.w) / 2 + stage.w - 1
+        let b_y1 = (BODY_HEIGHT - stage.h) / 2 - 1
+        let b_y2 = (BODY_HEIGHT - stage.h) / 2 + stage.h - 1
+
+        let snk_x = this.arr[0].cx
+        let snk_y = this.arr[0].cy
+        if (snk_x <= b_x1 || snk_x >= b_x2 || snk_y <= b_y1 || snk_y >= b_y2) {
+          window.clearInterval(window.snkMove)
+          confirm('游戏结束') ? gameInit() : void 0
+          return false
+        }
+        crashCheckd()
+        /*游戏结束判断*/
+        this.draw()
+      }, 100 / (1 + this.lv * this.z))
+    }
+  }
+  // 方向变化
+  function getNextPosition(keyCode, head) {
+    switch (keyCode) {
+      case 37:
+        return {
+          cx: head.cx - element_size,
+            cy: head.cy,
+            o: keyCode
+        }
+        case 38:
+          return {
+            cx: head.cx,
+              cy: head.cy - element_size,
+              o: keyCode
+          }
+          case 39:
+            return {
+              cx: head.cx + element_size,
+                cy: head.cy,
+                o: keyCode
+            }
+            case 40:
+              return {
+                cx: head.cx,
+                  cy: head.cy + element_size,
+                  o: keyCode
+              }
+              default:
+                break;
+    }
+  }
+
+  function Fruit() { // 果实
+    this.sx = random(0, (stage.w / element_size) - 1) * element_size + (BODY_WIDTH - stage.w) / 2
+    this.sy = random(0, (stage.h / element_size) - 1) * element_size + (BODY_HEIGHT - stage.h) / 2
+    this.count = 0
+    this.p_ct = 0
+    this.draw = () => {
+      if (this.count !== this.p_ct) {
+        this.sx = random(0, (stage.w / element_size) - 1) * element_size + (BODY_WIDTH - stage.w) / 2
+        this.sy = random(0, (stage.h / element_size) - 1) * element_size + (BODY_HEIGHT - stage.h) / 2
+        this.p_ct = this.count
+      }
+      
+      CTX.shadowOffsetX = 0;
+      CTX.shadowOffsetY = 0;
+      CTX.shadowColor = '';
+      CTX.shadowBlur = 0;
+      CTX.beginPath()
+      CTX.moveTo(this.sx, this.sy)
+      CTX.lineTo(this.sx + element_size, this.sy)
+      CTX.lineTo(this.sx + element_size, this.sy + element_size)
+      CTX.lineTo(this.sx, this.sy + element_size)
+      CTX.lineTo(this.sx, this.sy)
+      CTX.fillStyle = '#b0655e'
+      CTX.fill()
+    }
+  }
+
+  function crashCheckd() { // 碰撞检测
+    // 加分
+    if (snk.arr[0].cx - element_size / 2 === fruit.sx && snk.arr[0].cy - element_size / 2 === fruit.sy) {
+      fruit.count++
+      snk.lv = parseInt(fruit.count / 2)
+      // 升级
+      if (snk.p_lv !== snk.lv) {
+        snk.p_lv = snk.lv
+        window.clearInterval(window.snkMove)
+        console.log()
+        snk.move()
+      }
+      // 加长
+      let len = snk.arr.length
+      switch (snk.arr[len - 1].o) { // 37向左 38向上 39向右 40向下 
+        case 37:
+          snk.arr.push({
+            cx: snk.arr[len - 1].cx + element_size,
+            cy: snk.arr[len - 1].sx,
+            o: snk.arr[len - 1].o
+          })
+          break;
+        case 38:
+          snk.arr.push({
+            cx: snk.arr[len - 1].cx,
+            cy: snk.arr[len - 1].sx + element_size,
+            o: snk.arr[len - 1].o
+          })
+          break;
+        case 39:
+          snk.arr.push({
+            cx: snk.arr[len - 1].cx - element_size,
+            cy: snk.arr[len - 1].sx,
+            o: snk.arr[len - 1].o
+          })
+          break;
+        case 40:
+          snk.arr.push({
+            cx: snk.arr[len - 1].cx,
+            cy: snk.arr[len - 1].sx - element_size,
+            o: snk.arr[len - 1].o
+          })
+          break;
+        default:
+          break;
+      }
+      score()
+    }
+  }
+
+  function score() {
+    CTX.clearRect((BODY_WIDTH - stage_w) / 2, 0, (BODY_WIDTH - stage_w) / 2 + stage_w, 40)
+    let txt = `等级：${snk.lv}   得分：${fruit.count}`
+    CTX.font = `30px bold 黑体`;
+    CTX.fillStyle = '#9cdcfe';
+    CTX.textAlign = "center";
+    CTX.textBaseline = "middle";
+    CTX.fillText(txt, BODY_WIDTH / 2, 20);
+  }
+
+</script>
+
+</html>

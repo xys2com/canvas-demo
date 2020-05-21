@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    padding: 0px;
+    margin: 0;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    background: #000;
+    color: #fff;
+    text-align: center;
+  }
+
+  * {
+    padding: 0;
+    margin: 0;
+  }
+
+  canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+</style>
+
+<body>
+  <div id="c" style="width: 100%;height: 100%;"></div>
+</body>
+<script>
+  const lg = console.log
+  const {
+    pow,
+    PI,
+    SQRT2,
+    sin,
+    cos,
+    tan,
+    sqrt
+  } = Math
+
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    return el.length === 1 ? el[0] : el
+  }
+
+  function random(min, max) {
+    if (arguments.length < 2 && (max = min, min = 0), min > max) {
+      var a = max;
+      max = min, min = a
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+  // 计算两点间的距离
+  function GetDistance(x1, y1, x2, y2) {
+    return sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2)
+  }
+</script>
+<script>
+  var _W, _H, Ctx, Ctx2
+  const sqsData = [{
+      sq: {
+        width: 100,
+        height: 60,
+        c: {
+          x: 200,
+          y: 200
+        }
+      },
+      shd: {
+        offset: 20,
+        height: 180
+      },
+      shd2: {
+        height: 200
+      },
+      ellipse: true,
+      across: true
+    },
+    {
+      sq: {
+        width: 100,
+        height: 60,
+        c: {
+          x: 600,
+          y: 200
+        }
+      },
+      shd: {
+        offset: 20,
+        height: 180
+      },
+      shd2: {
+        height: 200
+      },
+      ellipse: false,
+      across: false
+    }
+  ]
+  window.onload = function () {
+    Init('#c')
+    createSquareShadow()
+  }
+  // 初始化
+  function Init(id) {
+    let Wrap = $(id)
+
+    _W = Wrap.clientWidth
+    _H = Wrap.clientHeight
+
+    let c = document.createElement('canvas')
+    let c2 = document.createElement('canvas')
+
+    c.width = _W
+    c.height = _H
+    c2.width = _W
+    c2.height = _H
+
+    c.style.zIndex = 1
+    c2.style.zIndex = 10
+
+    Wrap.appendChild(c)
+    Wrap.appendChild(c2)
+
+    Ctx = c.getContext('2d')
+    Ctx2 = c2.getContext('2d')
+  }
+  var SQS = []
+  // 方块渐变
+  /*
+    sq: 实体方块
+    across: 顺时针转90°
+      width, heigth, c:{x, y} center位置; rgb:{r, g, b} 颜色;
+          ·
+          p4
+    ·     ·     ·
+    p1    c     p3 
+          ·
+          p2
+-------------------------------
+    shd: 光影 1
+    shd2: 光影 2
+   p5 · ----- · p4
+      |       |
+   p1 ·   ·   · p3
+       \  c  /
+          · 
+          p2
+   `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, 1)`
+   ctx.ellipse(400,400,300,200,0,0,Math.PI*2)
+  */
+  function Square(sq = {}, shd = {}, shd2 = {}, ellipse = false, across = false) {
+
+    this.width = sq.width
+    this.height = sq.height
+    this.path = []
+    this.hf = this.width / 2
+    this.hfh = this.height / 2
+    this.c = sq.c
+    this.p = across ? {
+      x: this.c.x,
+      y: this.c.y - this.hf
+    } : {
+      x: this.c.x - this.hf,
+      y: this.c.y
+    }
+
+    this.rgb = sq.rgb ? sq.rgb : {
+      r: random(0, 255),
+      g: random(0, 255),
+      b: random(0, 255)
+    }
+
+    this.shadow = {
+      path: [],
+      gradient: [],
+      rgb: shd.rgb ? shd.rgb : this.rgb,
+      shdHeight: shd.height ? shd.height : (this.height * 2),
+      shdOffset: shd.offset | 0,
+      grd: ''
+    }
+
+    this.shadow2 = {
+      path: [],
+      gradient: [],
+      rgb: shd2.rgb ? shd2.rgb : this.rgb,
+      shdHeight: shd2.height ? shd2.height : (this.height * 2),
+      shdOffset: shd2.offset | 0,
+      grd: ''
+    }
+    this.compute = () => {
+      //计算实体方块绘画路径
+      if (!across) {
+        this.path = [
+          [this.p.x, this.p.y],
+          [this.p.x + this.hf, this.p.y + this.hfh],
+          [this.p.x + this.hf * 2, this.p.y],
+          [this.p.x + this.hf, this.p.y - this.hfh]
+        ]
+        //计算第一层光影路径 及属性
+        this.shadow.path = [
+          [this.p.x, this.p.y],
+          [this.p.x + this.hf, this.p.y + this.hfh],
+          [this.p.x + this.hf * 2, this.p.y],
+          [this.p.x + this.hf * 2 + this.shadow.shdOffset, this.p.y - this.shadow.shdHeight],
+          [this.p.x - this.shadow.shdOffset, this.p.y - this.shadow.shdHeight]
+        ]
+        this.shadow.gradient = [this.p.x + this.hf, this.p.y + this.hfh, this.p.x + this.hf, this.p.y - this.shadow
+          .shdHeight
+        ]
+        let grdP = this.shadow.gradient
+        let grd = Ctx.createLinearGradient(grdP[0], grdP[1], grdP[2], grdP[3])
+        for (let i = 0; i < 5; i++) {
+          grd.addColorStop(i * .2,
+            `rgba(${this.shadow.rgb.r}, ${this.shadow.rgb.g}, ${this.shadow.rgb.b}, ${1 - i*.2 - .2})`)
+        }
+        this.shadow.grd = grd
+
+        //计算第二层光影路径 及属性
+        this.shadow2.path = [
+          [this.p.x, this.p.y],
+          [this.p.x + this.hf, this.p.y + this.hfh],
+          [this.p.x + this.hf * 2, this.p.y],
+          [this.p.x + this.hf * 2 + this.shadow2.shdOffset, this.p.y - this.shadow2.shdHeight],
+          [this.p.x - this.shadow2.shdOffset, this.p.y - this.shadow2.shdHeight]
+        ]
+        this.shadow2.gradient = [this.p.x + this.hf, this.p.y + this.hfh, this.p.x + this.hf, this.p.y - this.shadow2
+          .shdHeight
+        ]
+        let grdP2 = this.shadow2.gradient
+        let grd2 = Ctx.createLinearGradient(grdP2[0], grdP2[1], grdP2[2], grdP2[3])
+        for (let i = 0; i < 5; i++) {
+          grd2.addColorStop(i * .2,
+            `rgba(${this.shadow2.rgb.r}, ${this.shadow2.rgb.g}, ${this.shadow2.rgb.b}, ${1 - i*.2 - .2})`)
+        }
+        this.shadow2.grd = grd2
+      } else {
+        this.path = [
+          [this.p.x, this.p.y],
+          [this.p.x - this.hfh, this.p.y + this.hf],
+          [this.p.x, this.p.y + this.hf * 2],
+          [this.p.x + this.hfh, this.p.y + this.hf]
+        ]
+        //计算第一层光影路径 及属性
+        this.shadow.path = [
+          [this.p.x, this.p.y],
+          [this.p.x - this.hfh, this.p.y + this.hf],
+          [this.p.x, this.p.y + this.hf * 2],
+          [this.p.x + this.shadow.shdHeight, this.p.y + this.hf * 2 + this.shadow.shdOffset],
+          [this.p.x + this.shadow.shdHeight, this.p.y - this.shadow.shdOffset]
+        ]
+        this.shadow.gradient = [this.p.x, this.p.y + this.hf, this.p.x + this.shadow.shdHeight, this.p.y + this.hf]
+        let grdP = this.shadow.gradient
+        let grd = Ctx.createLinearGradient(grdP[0], grdP[1], grdP[2], grdP[3])
+        for (let i = 0; i < 5; i++) {
+          grd.addColorStop(i * .2,
+            `rgba(${this.shadow.rgb.r}, ${this.shadow.rgb.g}, ${this.shadow.rgb.b}, ${1 - i*.2 - .2})`)
+        }
+        this.shadow.grd = grd
+
+        //计算第二层光影路径 及属性
+        this.shadow2.path = [
+          [this.p.x, this.p.y],
+          [this.p.x - this.hfh, this.p.y + this.hf],
+          [this.p.x, this.p.y + this.hf * 2],
+          [this.p.x + this.shadow2.shdHeight, this.p.y + this.hf * 2 + this.shadow2.shdOffset],
+          [this.p.x + this.shadow2.shdHeight, this.p.y - this.shadow2.shdOffset]
+        ]
+        this.shadow2.gradient = [this.p.x, this.p.y + this.hf, this.p.x + this.shadow2.shdHeight, this.p.y + this.hf]
+        let grdP2 = this.shadow2.gradient
+        let grd2 = Ctx.createLinearGradient(grdP2[0], grdP2[1], grdP2[2], grdP2[3])
+        for (let i = 0; i < 5; i++) {
+          grd2.addColorStop(i * .2,
+            `rgba(${this.shadow2.rgb.r}, ${this.shadow2.rgb.g}, ${this.shadow2.rgb.b}, ${1 - i*.2 - .2})`)
+        }
+        this.shadow2.grd = grd2
+      }
+    }
+    this.draw = () => {
+      // 绘画最底层
+      Ctx.beginPath()
+      Ctx.globalAlpha = 1
+      if (ellipse) {
+        across ? Ctx.ellipse(this.c.x, this.c.y, this.hfh, this.hf, 0, 0, Math.PI * 2) : Ctx.ellipse(this.c.x, this.c
+          .y, this.hf, this.hfh, 0, 0, Math.PI * 2)
+      } else {
+        this.path.forEach((e, i) => {
+          i === 0 ? Ctx.moveTo(e[0], e[1]) : Ctx.lineTo(e[0], e[1])
+        })
+        Ctx.lineTo(this.path[0][0], this.path[0][1])
+      }
+      Ctx.fillStyle = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, 1)`
+      Ctx.fill()
+      // 绘画第一层光影
+      Ctx.beginPath()
+      Ctx.globalAlpha = random(1, 7) === 1 ? random(5, 10) / 10 : void 0
+      this.shadow.path.forEach((e, i) => {
+        i === 0 ? Ctx.moveTo(e[0], e[1]) : Ctx.lineTo(e[0], e[1])
+      })
+      Ctx.lineTo(this.shadow.path[0][0], this.shadow.path[0][1])
+      Ctx.fillStyle = this.shadow.grd
+      Ctx.fill()
+
+      // // 绘画第二层光影
+      Ctx.beginPath()
+      Ctx.globalAlpha = 1
+      this.shadow2.path.forEach((e, i) => {
+        i === 0 ? Ctx.moveTo(e[0], e[1]) : Ctx.lineTo(e[0], e[1])
+      })
+      Ctx.lineTo(this.shadow2.path[0][0], this.shadow2.path[0][1])
+      Ctx.fillStyle = this.shadow2.grd
+      Ctx.fill()
+    }
+    this.draw
+  }
+  sqsData.forEach(e => {
+    let sq = new Square(e.sq, e.shd, e.shd2, e.ellipse, e.across)
+    SQS.push(sq)
+  })
+  function createSquareShadow() {
+    Ctx.clearRect(0, 0, _W, _H)
+    SQS.forEach(e => {
+      e.compute()
+      e.draw()
+    })
+    window.anmF = requestAnimationFrame(createSquareShadow)
+  }
+</script>
+
+</html>

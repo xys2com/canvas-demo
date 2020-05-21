@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    padding: 0px;
+    margin: 0;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    background: #000;
+    color: #fff;
+    text-align: center;
+  }
+
+  * {
+    padding: 0;
+    margin: 0;
+  }
+
+  canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+</style>
+
+<body>
+  <div id="c" style="width: 100%;height: 100%;"></div>
+</body>
+<script>
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    return el.length === 1 ? el[0] : el
+  }
+
+  function random(min, max) {
+    if (arguments.length < 2 && (max = min, min = 0), min > max) {
+      var a = max;
+      max = min, min = a
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+  // 计算两点间的距离
+  function GetDistance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2)
+  }
+</script>
+<script>
+  var _W, _H, Ctx, Ctx2 // 长宽 画笔
+  /*
+    pathArr 数组中 每个元素 有一个path
+      1.path 中下每一个数组元素中 每两个 数代表一个点
+      2. 2长度数组：表示线条起始点或者 线条结束点
+      3. 4长度数组：二次贝塞尔曲线 三个点；上一个数组的最后一个点是该曲线的开始点
+      4. 6长度数组：三次贝塞尔曲线 四个点；上一个数组的最后一个点是该曲线的开始点
+      5. 路径初始化函数 curveInit
+  */
+  let pathArr = [{
+      path: [
+        [100, 400],
+        [200, 400],
+        [220, 400, 200, 420, 220, 420],
+        [300, 420],
+      ],
+      mover: null
+    },
+    {
+      path: [
+        [200, 200],
+        [300, 200],
+        [320, 200, 300, 220, 320, 220],
+        [400, 220],
+      ],
+      mover: null
+    },
+    {
+      path: [
+        [300, 250, 300, 300],
+        [300, 350, 250, 350],
+        [200, 350, 200, 300],
+        [200, 250, 250, 250],
+      ],
+      mover: null
+    },
+    {
+      path: [
+        [400, 400],
+        [500, 400],
+        [500, 500],
+        [400, 500],
+        [400, 400]
+      ],
+      mover: null
+    },
+    {
+      path: [
+        [600, 500, 600, 600, 750, 550],
+        [700, 700],
+        [800, 700, 700, 600, 750, 650],
+        [800, 800],
+        [450, 550]
+      ],
+      mover: null
+    }
+  ]
+
+  window.onload = function () {
+    Init('#c')
+  }
+
+  // 因为canvas 绘制的线条的特点 做出以下处理
+  function curveInit(path) {
+    if (path[0].length === 4 || path[0].length === 6) { // path[0] 的长度 为 4或者 6 的时候 把总路径的最后一个点作为 总线段起始点 和 曲线的开始点
+      let lastPath = path[path.length - 1]
+      let newP = [lastPath[lastPath.length - 2], lastPath[lastPath.length - 1]]
+      path.unshift(newP) // 总线段起始点
+      path.unshift(newP) // 曲线开始点
+    } else if ((path[1].length === 4 || path[1].length === 6) && path[0].length ===
+      2) { // path[1]的长度为4或者6且path[0]的长度为2的时候，把path[0]作为曲线的开始点
+      let newP = path[0]
+      path.unshift(newP) // 曲线的开始点
+    }
+    return path
+  }
+
+  // 初始化
+  function Init(id) {
+    let Wrap = $(id)
+
+    _W = Wrap.clientWidth
+    _H = Wrap.clientHeight
+
+    let c = document.createElement('canvas')
+    let c2 = document.createElement('canvas')
+
+    c.width = _W
+    c.height = _H
+    c2.width = _W
+    c2.height = _H
+
+    c.style.zIndex = 1
+    c2.style.zIndex = 10
+
+    Wrap.appendChild(c)
+    Wrap.appendChild(c2)
+
+    Ctx = c.getContext('2d')
+    Ctx2 = c2.getContext('2d')
+
+    pathArr.forEach((e) => {
+      e.path = curveInit(e.path)
+      e.mover = new Mover(e.path)
+      e.mover.init()
+    })
+    drawLine()
+  }
+
+  // 绘制所有线条
+  function drawLine() {
+    pathArr.forEach((e) => {
+      e.path.forEach((point, i) => {
+        Ctx.lineJoin = "round"
+        if (i === 0) {
+          Ctx.lineWidth = 4
+          Ctx.moveTo(...point)
+        } else if (i !== 0) {
+          if (point.length === 2) {
+            Ctx.lineTo(...point)
+          } else if (point.length === 4) { // 二次贝塞尔曲线
+            Ctx.quadraticCurveTo(...point)
+          } else if (point.length === 6) { // 三次贝塞尔曲线
+            Ctx.bezierCurveTo(...point)
+          }
+        }
+      })
+    })
+    Ctx.strokeStyle = '#1c1e53'
+    Ctx.stroke()
+    moveDot()
+  }
+
+  function Mover(path) {
+    this.nx = 0
+    this.ny = 0
+    this.frame = 0
+    this.count = 0
+    this.num = 1
+    this.t = 0
+    this.type = 0 // 0直线，1 二次bsr曲线，2 三次bsr曲线
+    this.velocity = 2
+    this.path = path
+    this.rgb = {
+      r: random(0, 255),
+      g: random(0, 255),
+      b: random(0, 255)
+    }
+    this.clr = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, 1)`
+    this.ballShadowArr = []
+
+    this.init = () => {
+      this.count = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+        .path[this.num][1]) / this.velocity // 获得当前路径的帧数
+      Ctx2.arc(this.nx, this.ny, 2, 0, 2 * Math.PI)
+    }
+
+    this.move = () => {
+      if ((this.frame >= this.count) && this.type === 0 || (this.t >= 1) && (this.type === 1 || this.type === 2)) {
+        // 绘制一个点到另一个阶级判断 
+        if (this.num < (this.path.length - 1)) {
+          this.num++
+        } else {
+          // cancelAnimationFrame(window.anmF)
+          // Ctx2.clearRect(0, 0, _W, _H)
+          // return
+          // this.path = [...this.path, ...this.path.reverse()]
+          // this.num++
+          this.num = 1
+        }
+        if (this.path[this.num].length === 2) { // 直线路径
+          this.type = 0
+          this.count = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0],
+            this.path[this.num][
+              1
+            ]) / this.velocity // 获得帧数
+          this.frame = 0
+          this.t = 0
+        } else if (this.path[this.num].length === 4) { // 二次贝塞尔曲线路径
+          this.type = 1
+          let d = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+              .path[this.num][1]) +
+            GetDistance(this.path[this.num][0], this.path[this.num][1], this.path[this.num][2], this.path[this.num][
+              3
+            ])
+          this.count = d / this.velocity
+          this.frame = 1 / this.count
+          this.t = 0
+        } else if (this.path[this.num].length === 6) { // 三次贝塞尔曲线路径
+          this.type = 2
+          let d = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+              .path[this.num][1]) +
+            GetDistance(this.path[this.num][2], this.path[this.num][3], this.path[this.num][0], this.path[this.num][
+              1
+            ]) +
+            GetDistance(this.path[this.num][4], this.path[this.num][5], this.path[this.num][2], this.path[this.num][
+              3
+            ])
+          this.count = d / this.velocity
+          this.frame = 1 / this.count
+          this.t = 0
+        }
+      }
+      let len = this.path[this.num - 1].length
+      let pre_po = [this.path[this.num - 1][len - 2], this.path[this.num - 1][len - 1]] // 获得路径系统 最后一个 坐标
+      let now_po = this.path[this.num]
+
+      if (this.type === 0) {
+        if (pre_po.length === 2) {
+          this.nx = (now_po[0] - pre_po[0]) * (this.frame / this.count) + pre_po[0]
+          this.ny = (now_po[1] - pre_po[1]) * (this.frame / this.count) + pre_po[1]
+        } else if (pre_po.length === 4) {
+          this.nx = (now_po[0] - pre_po[2]) * (this.frame / this.count) + pre_po[2]
+          this.ny = (now_po[1] - pre_po[3]) * (this.frame / this.count) + pre_po[3]
+        } else {
+          this.nx = (now_po[0] - pre_po[4]) * (this.frame / this.count) + pre_po[4]
+          this.ny = (now_po[1] - pre_po[5]) * (this.frame / this.count) + pre_po[5]
+        }
+        this.frame++
+      } else if (this.type === 1) {
+        let pow = Math.pow
+        this.nx = pow((1 - this.t), 2) * pre_po[0] +
+          2 * this.t * (1 - this.t) * now_po[0] +
+          pow(this.t, 2) * now_po[2]
+
+        this.ny = pow((1 - this.t), 2) * pre_po[1] +
+          2 * this.t * (1 - this.t) * now_po[1] +
+          pow(this.t, 2) * now_po[3]
+        this.t = this.t + this.frame
+      } else if (this.type === 2) {
+        let pow = Math.pow
+
+        this.nx = pre_po[0] * pow((1 - this.t), 3) +
+          3 * now_po[0] * this.t * pow((1 - this.t), 2) +
+          3 * now_po[2] * pow(this.t, 2) * (1 - this.t) +
+          now_po[4] * pow(this.t, 3)
+
+        this.ny = pre_po[1] * pow((1 - this.t), 3) +
+          3 * now_po[1] * this.t * pow((1 - this.t), 2) +
+          3 * now_po[3] * pow(this.t, 2) * (1 - this.t) +
+          now_po[5] * pow(this.t, 3)
+
+        this.t = this.t + this.frame
+      }
+
+      Ctx2.shadowOffsetX = 0;
+      Ctx2.shadowOffsetY = 0;
+      Ctx2.shadowColor = this.clr;
+      Ctx2.shadowBlur = 10;
+      Ctx2.beginPath()
+      Ctx2.arc(this.nx, this.ny, 2, 0, 2 * Math.PI)
+      Ctx2.fillStyle = this.clr
+      Ctx2.globalAlpha = 1
+      Ctx2.fill()
+      if (this.ballShadowArr.length <= 48) {
+        this.ballShadowArr.push({
+          x: this.nx,
+          y: this.ny
+        })
+      } else {
+        this.ballShadowArr.splice(0, 1)
+        this.ballShadowArr.push({
+          x: this.nx,
+          y: this.ny
+        })
+      }
+      shadowBall(this.ballShadowArr, this.rgb)
+    }
+  }
+
+  function moveDot() { // 绘制画布所有内容
+    Ctx2.clearRect(0, 0, _W, _H)
+    pathArr.forEach(({
+      mover
+    }, i) => {
+      mover.move()
+    })
+    window.anmF = requestAnimationFrame(moveDot)
+  }
+
+  function shadowBall(ballShadowArr, rgb) { // 绘制拖尾
+    ballShadowArr.forEach((e, i) => {
+      let clr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${i / 48 * .8})`
+      Ctx2.beginPath()
+      Ctx2.arc(e.x, e.y, 2, 0, 2 * Math.PI)
+      Ctx2.fillStyle = clr
+      Ctx2.fill()
+    })
+  }
+
+  // 计算两点间的距离
+  function GetDistance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2)
+  }
+
+  function pointReverse(path) { // 反转数组的点
+    path.forEach((e, i) => {
+      if (e.length === 4) {
+        let arr = e
+        path[i] = [arr[2], arr[3], arr[0], arr[1]]
+      }
+      if (e.length === 6) {
+        let arr = e
+        path[i] = [arr[4], arr[5], arr[2], arr[3], arr[0], arr[1]]
+      }
+    })
+    return path.reverse()
+  }
+</script>
+
+</html>

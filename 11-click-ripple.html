@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>涟漪</title>
+  <style type="text/css">
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      padding: 0px;
+      margin: 0;
+      font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+      box-sizing: border-box;
+      background: #000;
+      color: #fff;
+      text-align: center;
+    }
+    canvas{
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <canvas id="heart"></canvas>
+</body>
+<script type="text/javascript">
+  var BODY_WIDTH, BODY_HEIGHT
+  var CANVAS = $('#canvas')
+  var CANVAS_H = $('#heart')
+  var CTX = CANVAS.getContext('2d')
+  var CTX_H =  CANVAS_H.getContext('2d')
+  var rippleList = new Array()
+  var heartList = new Array()
+  var dropList = new Array()
+  var beginAnm = false
+  var beginAnmH = false
+  window.onload = function () {
+    init()
+  }
+  function init() {
+    BODY_WIDTH = $('body').clientWidth
+    BODY_HEIGHT = $('body').clientHeight
+    CANVAS.width = BODY_WIDTH
+    CANVAS.height = BODY_HEIGHT
+    CANVAS_H.width = BODY_WIDTH
+    CANVAS_H.height = BODY_HEIGHT
+  }
+  $("body").onclick=function(e){
+    createDrop(e.offsetX, e.offsetY)
+    if(!beginAnm){
+      drawAllRipple()
+    }
+  }
+  function createDrop(x, y) {
+    dropList.push(new Drop(x, y))
+  }
+  // 水珠
+  function Drop (x, y) {
+    this.x = x
+    this.y = y
+    this.sh = random(150, BODY_WIDTH < 500 ? 200 : 450) // 距离水面高度
+    this.eh = this.y + this.sh // 水面位置
+    this.r = random(2, 4)
+    this.v = 0
+    this.av = 9.8 / 60
+    this.state = 0 // 0 下落阶段 1 上升和再次下落阶段
+    this.die = false
+    this.draw = function () {
+      CTX.beginPath()
+      CTX.arc(this.x - this.r, this.y - this.r, this.r, 0, Math.PI * 2)
+      CTX.fillStyle="#fff"
+      CTX.fill()
+      if (this.state === 0) {
+        this.v += this.av
+        this.y = this.y + this.v
+        if (this.y >= this.eh) { // 进入上升阶段
+          createRipples(this.x, this.eh, this.r) // 创建涟漪
+          createHeart(this.x, this.eh)
+          this.state = 1
+        }
+      }
+      if (this.state === 1) {
+        this.v -= this.av*3
+        this.y = this.y - this.v
+        if (this.y >= this.eh) { // 死亡
+          createRipples(this.x, this.eh, this.r) // 创建涟漪
+          this.die = true
+        }
+      }
+    }
+  }
+
+  // 自动绘画
+  function drawAllRipple() {
+    beginAnm = true
+    CTX.clearRect(0,0,BODY_WIDTH,BODY_HEIGHT)
+    rippleList.forEach((e, i)=>{
+      e.draw()
+      if (e.die){
+        rippleList.splice(i, 1)
+      }
+    })
+    dropList.forEach((e, i) => {
+      e.draw()
+      if(e.die){
+        dropList.splice(i, 1)
+      }
+    })
+    window.anm = requestAnimationFrame(drawAllRipple)
+    if (rippleList.length === 0 && dropList.length === 0 && beginAnm) {
+      window.cancelAnimationFrame(anm)
+      beginAnm = false
+    }
+  }
+  // 涟漪
+  function createRipples(x = BODY_WIDTH/2, y = BODY_HEIGHT/2, r = 2){
+    rippleList.push(new Ripple(x, y, r))
+    let count = 0
+    let num = random(2, 4)
+    let itv = setInterval(() => {
+      count++
+      if (count >= num) {
+        window.clearInterval(itv)
+      }
+      rippleList.push(new Ripple(x, y, r))
+    }, 800)
+  }
+  // 创建一圈涟漪
+  function Ripple (x, y, r) {
+    this.rate = 0
+    this.velocity = 5 / 10
+    this.ap = 1
+    this.die = false
+    this.r = r
+    this.draw = function () {
+      CTX.beginPath()
+      CTX.globalAlpha = this.ap
+      CTX.ellipse(x, y,30*this.rate,10*this.rate,0,0, Math.PI * 2)
+      if (this.rate > this.r) {
+        this.ap = this.ap - .006
+      }
+      if (this.ap <= 0) {
+        this.die = true
+      }
+      CTX.lineWidth = 2
+      CTX.strokeStyle = "rgba(241,158,194,.5)"
+      CTX.stroke()
+      this.rate += this.velocity / 10
+      this.velocity = this.velocity - .0005
+    }
+  }
+  
+  function createHeart(x, y) {
+    heartList.push(new Heart(x, y))
+    if(!beginAnmH){
+      drawAllHeart()
+    }
+  }
+  function drawAllHeart(){
+    beginAnmH = true
+    CTX_H.clearRect(0,0,BODY_WIDTH,BODY_HEIGHT)
+    window.fm0 = window.requestAnimationFrame(drawAllHeart)
+    if (heartList.length === 0 && beginAnmH) {
+      window.cancelAnimationFrame(fm0)
+      beginAnmH = false
+    }
+    heartList.forEach((e, i) => {
+      e.draw()
+      if (e.angle > 30) {
+        e.die = true
+      }
+      if(e.ap <= 0){
+        heartList.splice(i, 1)
+      }
+    })
+  }
+  function Heart(X, Y) {
+    this.rate = random((BODY_WIDTH < 500 ? 50 :10), 100) / 100
+    this.size = 200 * this.rate
+    this.X = X
+    this.Y = Y
+    this.angle = 10
+    this.ap = 1
+    this.die = false
+    this.cvs = createHC(this.size)
+    this.ctx = this.cvs.getContext('2d')
+    this.draw = function dr() {
+      var t = parseFloat(this.angle / Math.PI)
+      var x = parseFloat(3.9 * (16 * Math.pow(Math.sin(t), 3)) + 100) * this.rate
+      var y = parseFloat(-4 * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) + 100) * this.rate
+      this.ctx.globalAlpha = .02
+      this.ctx.lineTo(x, y)
+      this.ctx.lineJoin = "round"
+      this.ctx.strokeStyle = `rgba(241,158,194, ${this.ap})`
+      this.ctx.stroke()
+      this.angle += .4
+      if (this.die) {
+        this.ctx.fillStyle = `rgba(241,158,194, ${this.ap})`
+        this.ctx.fill()
+        this.ap -= .003
+        this.Y -= 1
+      }
+      CTX_H.globalAlpha = this.ap
+      CTX_H.drawImage(this.cvs, this.X - 100 * this.rate, this.Y - 170 * this.rate, this.size, this.size)
+    }
+  }
+
+  function createHC(size){
+    let c = document.createElement("canvas")
+    c.height = size
+    c.width = size
+    return c
+  }
+
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    if (el.length == 1) {
+      return el[0]
+    } else {
+      return el
+    }
+  }
+
+  function random(min, max) {
+    if (arguments.length < 2) {
+      max = min
+      min = 0
+    }
+    if (min > max) {
+      let hold = max
+      max = min
+      min = hold
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  function easeInQuad(x, t, b, c, d) {
+    return c * (t /= d) * t + b
+  }
+</script>
+
+</html>

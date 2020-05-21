@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<style>
+  body,html{
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+</style>
+<body>
+  <div id="app">
+    <canvas id="cvs" style="background: #000;"></canvas>
+  </div>
+</body>
+<script>
+  window.$ = (e) => {
+    let t = document.querySelectorAll(e);
+    return t.length > 1 ? t : 1 === t.length ? t[0] : void 0
+  };
+  window.random = function (n, r) {
+    if (arguments.length < 2 && (r = n, n = 0), n > r) {
+      var a = r;
+      r = n, n = a
+    }
+    return Math.floor(Math.random() * (r - n + 1)) + n
+  };
+  (() => {
+    let _W = document.documentElement.clientWidth;
+    let _H = document.documentElement.clientHeight;
+    let _Cvs = $("#cvs")
+    _Cvs.setAttribute("width", _W)
+    _Cvs.setAttribute("height", _H)
+    let _Ctx = _Cvs.getContext("2d")
+    var Square = function () {
+      this.size = random(10, 40)
+      this.weight = this.size * this.size/25
+      this.accelerated = this.weight / 75
+      this.speed = random(5, 25)
+      this.hue = random(0, 360)
+      this.center = _W / 2 + random(-10,10)
+      //random(0, _W)
+      this.maxY = _H
+      //random(_H/5*2, _H)
+      this.x = this.center - this.size
+      this.y = 0
+      this.d = 0
+      this.life = true
+      this.fall = () => {
+        this.hue += 5
+        this.speed += this.accelerated
+        this.x += this.d
+        this.y += this.speed
+        if(this.y >= this.maxY-20 && this.life){
+          this.life = false
+          this.speed = - this.size*random(30,40)/10/5
+          this.d = random(-7, 7)
+        }
+        if(!this.life){
+          this.speed += this.accelerated*3
+        }
+        _Ctx.fillStyle = 'hsl(' + this.hue + ', 61%, 50%)'
+        _Ctx.beginPath()
+        _Ctx.moveTo(this.x, this.y)
+        _Ctx.lineTo(this.x + this.size, this.y)
+        _Ctx.lineTo(this.x + this.size, this.y + this.size)
+        _Ctx.lineTo(this.x, this.y + this.size)
+        _Ctx.lineTo(this.x, this.y)
+        
+        let grd = _Ctx.createRadialGradient(this.x + this.size/2, this.y + this.size/2, 0, this.x + this.size/2, this.y + this.size/2, this.size/2);
+        grd.addColorStop(0.001, 'hsla(' + this.hue + ', 61%, 100%, 1)');
+        grd.addColorStop(0.1, 'hsla(' + this.hue + ', 61%, 50%, .7)');
+        grd.addColorStop(0.15, 'hsla(' + this.hue + ', 61%, 50%, .5)');
+        grd.addColorStop(0.25, 'hsla(' + this.hue + ', 61%, 50%, .3)');
+        grd.addColorStop(0.4, 'hsla(' + this.hue + ', 61%, 50%, .1)');
+        grd.addColorStop(.7, 'transparent');
+
+        _Ctx.fillStyle = grd;
+        _Ctx.strokeStyle = this.hue
+        _Ctx.lineJoin = 'round';
+        _Ctx.fill()
+      }
+    }
+    function main(){
+      let squares = new Array()
+      for(let i = 0; i < 300; i++){
+        let s = new Square()
+        squares.push(s)
+      }
+      let draw = () => {
+        // _Ctx.clearRect(0, 0, _W, _H)
+        _Ctx.fillStyle = 'rgba(0,0,0,.1)';
+        _Ctx.fillRect(0, 0, _W, _H)
+        squares.forEach((e, i) => {
+          e.fall()
+          if(e.y > e.maxY || e.y > _H){
+            squares.splice(i, 1)
+            squares.push(new Square())
+          }
+        })
+        requestAnimationFrame(draw)
+      }
+      draw()
+    }
+    main()
+  })()
+</script>
+
+</html>

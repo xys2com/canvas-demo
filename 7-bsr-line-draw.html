@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" ,content="width=device-width,initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" ,content="ie=edge">
+  <title>Document</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      padding: 0px;
+      margin: 0;
+      font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+      box-sizing: border-box;
+      background: #000;
+      color: #fff;
+      text-align: center;
+    }
+
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    .cvs-wrap {
+      height: 100%;
+      min-width: 1200px;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="cvs-wrap" id="c"></div>
+</body>
+<script>
+  const letterList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+    'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+  ]
+  const {
+    pow,
+    PI,
+    SQRT2,
+    sin,
+    abs,
+    cos,
+    tan,
+    sqrt
+  } = Math
+
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    return el.length === 1 ? el[0] : el
+  }
+
+  function random(min, max) {
+    if (arguments.length < 2 && (max = min, min = 0), min > max) {
+      var a = max;
+      max = min, min = a
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  function GetDistance(x1, y1, x2, y2) {
+    return sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2)
+  }
+
+  function RandomId() {
+    let s = ''
+    for (let i = 0; i < 5; i++) {
+      s += letterList[random(0, 61)]
+    }
+    return s + Date.now().toString(36)
+  }
+
+  var chartsData = {
+    path: [
+      [0, 600],
+      [0, 600],
+      [200, 600, 250, 350, 400, 550],
+      [750, 950, 750, 100, 980, 450],
+      [1330, 950, 1400, 150, 1630, 500],
+      [1760, 700, 2000, 550]
+    ],
+    node: []
+    // path: [
+    //   [0, 600],
+    //   [134, 657, 143, 376, 291, 567]
+    // ]
+  }
+  var canvases = []
+  var CvsLeft = ``
+
+  var nodeXs = []
+  var Nodes = []
+  var NodesP = []
+
+  var NodesInfo = [{
+    time: '2017 年 12月',
+    title: '项目团队成立',
+    url: './test.jpg',
+    offsetX: 0
+  }, {
+    time: '2017 年 12月',
+    title: '项目团队成立',
+    url: './test.jpg',
+    offsetX: 0
+  }, {
+    time: '2017 年 12月',
+    title: '项目团队成立',
+    url: './test.jpg',
+    offsetX: 100
+  }, {
+    time: '2017 年 12月',
+    title: '项目团队成立',
+    url: './test.jpg',
+    offsetX: 50
+  }, {
+    time: '2017 年 12月',
+    title: '项目团队成立',
+    url: './test.jpg',
+    offsetX: 60
+  }]
+  var NodesInfoObj = []
+</script>
+<script>
+  window.onload = function () {
+    let Wrap = $('#c')
+    let _W = Wrap.clientWidth,
+      _H = Wrap.clientHeight
+
+    let c = document.createElement('canvas')
+    let c2 = document.createElement('canvas')
+    let c3 = document.createElement('canvas')
+    CvsLeft = (1920 - _W) / 2
+    c.width = 1920
+    c.style.left = `-${CvsLeft}px`
+    c.height = _H
+    canvases.push(c)
+
+    c2.width = 1920
+    c2.style.left = `-${CvsLeft}px`
+    c2.height = _H
+    canvases.push(c2)
+
+    c3.width = 1920
+    c3.style.left = `-${CvsLeft}px`
+    c3.height = _H
+    canvases.push(c3)
+
+    c.style.zIndex = 10
+    c2.style.zIndex = 1
+    c3.style.zIndex = 20
+
+    Wrap.appendChild(c)
+    Wrap.appendChild(c2)
+    Wrap.appendChild(c3)
+
+    Ctx = c.getContext('2d')
+    Ctx2 = c2.getContext('2d')
+    Ctx3 = c2.getContext('2d')
+    Ctx.initCtx = Ctx2.initCtx = Ctx3.initCtx = function () {
+      this.shadowOffsetX = 0
+      this.shadowOffsetY = 0
+      this.shadowColor = ''
+      this.shadowBlur = 0
+      this.globalAlpha = 1
+      this.strokeStyle = ''
+      this.fillStyle = ''
+    }
+    Ctx.clear = Ctx2.clear = Ctx3.clear = function (sx = 0, sy = 0, ex = _W, ey = _H) {
+      this.clearRect(sx, sy, ex, ey)
+    }
+    let chartCurve = new ChartCurve({
+      path: chartsData.path
+    })
+    initNode(NodesInfo.length)
+
+    function chartDraw() {
+
+      if (!chartCurve.end) {
+        chartCurve.init()
+        chartCurve.move()
+      }
+      let floatOver = checkedInfos()
+      if (floatOver && chartCurve.end) {
+        window.cancelAnimationFrame(window.ChartCurveAnm) // 停止动画
+        chartCurve.pathDraw()
+        return
+      }
+      if (!floatOver) {
+        NodesInfoObj.forEach((e) => {
+          if (!e.floatOver) {
+            e.startFloat(Ctx)
+          }
+        })
+      }
+      window.ChartCurveAnm = requestAnimationFrame(chartDraw)
+    }
+    chartDraw()
+  }
+
+  // 检测是否所有图文绘制完成
+  function checkedInfos() {
+    let ckd = false
+    NodesInfoObj.forEach(e => {
+      ckd = e.floatOver
+    })
+    return ckd
+  }
+
+  window.onresize = function () {
+    let _W = $('#c').clientWidth
+    CvsLeft = (1920 - _W) / 2
+    canvases.forEach(e => {
+      e.style.left = `-${CvsLeft}px`
+    })
+  }
+  // 初始化节点x坐标
+  // 根据当前屏幕宽度初始化节点x位置
+  function initNode(nodeNum) {
+    nodeNum += 1
+    // chartsData.node
+    let _W = $('#c').clientWidth
+    let baseX = parseFloat(_W / nodeNum)
+    for (let i = 1; i < nodeNum; i++) {
+      nodeXs.push({
+        x: baseX * i,
+        draw: false
+      })
+    }
+  }
+
+  function CreateNode(cx, cy) { // 节点类
+    this.cx = cx
+    this.cy = cy
+    this.itv = null
+    this.srgb = [128, 105, 157]
+    this.ergb = [...this.srgb]
+    this.preStatus = false
+    this.mouseEnter = false
+    this.rt = {
+      j: 0, // 0：rat放大到 1 阶段； 2：rat缩小到 .8 阶段；3：rat恢复到 1阶段；
+      rat: 1
+    }
+    this.draw = (ctx) => { // 初始绘制节点
+      ctx.initCtx()
+      ctx.clear(cx - 11, cy - 11, cx + 11, cy + 11)
+      ctx.beginPath()
+      ctx.arc(cx, cy, 3, 0, 2 * PI)
+      ctx.fillStyle = `rgb(${this.ergb[0]}, ${this.ergb[1]}, ${this.ergb[2]})`
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(cx, cy, 10, 0, 2 * PI)
+      ctx.strokeStyle = `rgb(${this.ergb[0]}, ${this.ergb[1]}, ${this.ergb[2]})`
+      ctx.stroke()
+    }
+    this.light = (ctx) => { // 鼠标 hover 状态
+      window.clearInterval(this.itv)
+      this.itv = setInterval(() => {
+        this.ergb.forEach((e, i) => {
+          this.ergb[i] = e + 10
+          if (this.ergb[i] >= 255) {
+            this.ergb[i] = 255
+          }
+        })
+        if (this.rt.j === 0) {
+          this.rt.rat += .1
+          if (this.rt.rat >= 1.5) {
+            this.rt.j = 1
+          }
+        }
+        if (this.rt.j === 1) {
+          this.rt.rat -= .1
+          if (this.rt.rat <= .7) {
+            this.rt.j = 2
+          }
+        }
+        if (this.rt.j === 2) {
+          this.rt.rat += .1
+          if (this.rt.rat >= 1) {
+            this.rt.j = 3
+            this.rt.rat = 1
+          }
+        }
+        if (this.ergb[0] === 255 && this.ergb[1] === 255 && this.ergb[2] === 255 && this.rt.j === 3) {
+          window.clearInterval(this.itv)
+          this.itv = null
+        }
+        let r_rat = 11 * 1.5
+        ctx.initCtx()
+        ctx.clear(cx - r_rat, cy - r_rat, r_rat * 2, r_rat * 2)
+        ctx.beginPath()
+        ctx.arc(cx, cy, 3 * this.rt.rat, 0, 2 * PI)
+        ctx.fillStyle = `rgb(${this.ergb[0]}, ${this.ergb[1]}, ${this.ergb[2]})`
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(cx, cy, 10 * this.rt.rat, 0, 2 * PI)
+        ctx.strokeStyle = `rgb(${this.ergb[0]}, ${this.ergb[1]}, ${this.ergb[2]})`
+        ctx.stroke()
+      }, 16);
+    }
+    this.dark = (ctx) => { // 恢复none-hover 状态
+      window.clearInterval(this.itv)
+      this.itv = setInterval(() => {
+        this.ergb.forEach((e, i) => {
+          if (this.ergb[i] > this.srgb[i]) {
+            this.ergb[i] = e - 10
+          } else {
+            this.ergb[i] = this.srgb[i]
+          }
+        })
+        if (this.ergb[0] === this.srgb[0] && this.ergb[1] === this.srgb[1] && this.ergb[2] === this.srgb[2]) {
+          window.clearInterval(this.itv)
+          this.itv = null
+        }
+        let r_rat = 11 * 1.5
+        ctx.initCtx()
+        ctx.clear(cx - r_rat, cy - r_rat, r_rat * 2, r_rat * 2)
+        ctx.beginPath()
+        ctx.arc(cx, cy, 3 * this.rt.rat, 0, 2 * PI)
+        ctx.fillStyle = `rgb(${this.ergb[0]}, ${this.ergb[1]}, ${this.ergb[2]})`
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(cx, cy, 10 * this.rt.rat, 0, 2 * PI)
+        ctx.strokeStyle = `rgb(${this.ergb[0]}, ${this.ergb[1]}, ${this.ergb[2]})`
+        ctx.stroke()
+      }, 16);
+    }
+  }
+
+  function drawNode(cx, cy) {
+    let oc = document.createElement('canvas')
+    let oct = oc.getContext('2d')
+    oc.width = 22
+    oc.height = 22
+    oct.beginPath()
+    oct.arc(11, 11, 3, 0, 2 * PI)
+    oct.fillStyle = '#80699d'
+    oct.fill()
+    oct.beginPath()
+    oct.arc(11, 11, 10, 0, 2 * PI)
+    oct.strokeStyle = '#80699d'
+    oct.stroke()
+  }
+
+  function ChartCurve({ // 曲线绘制
+    path
+  }) {
+    this.path = path
+    this.nx = this.path[0][0]
+    this.ny = this.path[0][1]
+    this.frame = 0
+    this.count = 0
+    this.num = 1
+    this.t = 0
+    this.clr = '#fff'
+    this.end = false
+    this.velocity = 2
+    this.ga = 0
+    this.z = 1
+    this.type = 0 // 0直线，1 二次bsr曲线，2 三次bsr曲线
+    this.pathDraw = () => {
+      Ctx2.initCtx()
+      Ctx2.clear()
+      Ctx2.lineJoin = "round"
+      Ctx2.lineWidth = 1
+      path.forEach((point, i) => {
+        if (i === 0) {
+          Ctx2.moveTo(...point)
+        } else if (i !== 0) {
+          if (point.length === 2) {
+            Ctx2.lineTo(...point)
+          } else if (point.length === 4) { // 二次贝塞尔曲线
+            Ctx2.quadraticCurveTo(...point)
+          } else if (point.length === 6) { // 三次贝塞尔曲线
+            Ctx2.bezierCurveTo(...point)
+          }
+        }
+      })
+      Ctx2.shadowOffsetX = 0
+      Ctx2.shadowOffsetY = 0
+      Ctx2.shadowColor = `rgba(${255}, ${255}, ${255}, ${1})`
+      Ctx2.shadowBlur = 30
+      Ctx2.strokeStyle = '#fff'
+      Ctx2.stroke()
+      Ctx2.stroke()
+    }
+    this.init = () => {
+      this.count = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+        .path[this.num][1]) / this.velocity // 获得当前路径的帧数
+      Ctx2.moveTo(this.nx, this.ny)
+    }
+
+    this.move = () => {
+      if ((this.frame >= this.count) && this.type === 0 || (this.t >= 1) && (this.type === 1 || this.type === 2)) {
+        // 绘制一个点到另一个阶级判断 
+        if (this.num < (this.path.length - 1)) {
+          this.num++
+        } else {
+          this.end = true
+          return
+        }
+        if (this.path[this.num].length === 2) { // 直线路径
+          this.type = 0
+          this.count = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0],
+            this.path[this.num][
+              1
+            ]) / this.velocity // 获得帧数
+          this.frame = 0
+          this.t = 0
+        } else if (this.path[this.num].length === 4) { // 二次贝塞尔曲线路径
+          this.type = 1
+          this.t = 0
+        } else if (this.path[this.num].length === 6) { // 三次贝塞尔曲线路径
+          this.type = 2
+          this.t = 0
+        }
+      }
+      let len = this.path[this.num - 1].length
+      let pre_po = [this.path[this.num - 1][len - 2], this.path[this.num - 1][len - 1]] // 获得路径系统 最后一个 坐标
+      let now_po = this.path[this.num]
+      if (this.type === 0) {
+        if (pre_po.length === 2) {
+          this.nx = (now_po[0] - pre_po[0]) * (this.frame / this.count) + pre_po[0]
+          this.ny = (now_po[1] - pre_po[1]) * (this.frame / this.count) + pre_po[1]
+        } else if (pre_po.length === 4) {
+          this.nx = (now_po[0] - pre_po[2]) * (this.frame / this.count) + pre_po[2]
+          this.ny = (now_po[1] - pre_po[3]) * (this.frame / this.count) + pre_po[3]
+        } else {
+          this.nx = (now_po[0] - pre_po[4]) * (this.frame / this.count) + pre_po[4]
+          this.ny = (now_po[1] - pre_po[5]) * (this.frame / this.count) + pre_po[5]
+        }
+        this.frame++
+      } else if (this.type === 1) {
+        let pow = Math.pow
+        this.nx = pow((1 - this.t), 2) * pre_po[0] +
+          2 * this.t * (1 - this.t) * now_po[0] +
+          pow(this.t, 2) * now_po[2]
+
+        this.ny = pow((1 - this.t), 2) * pre_po[1] +
+          2 * this.t * (1 - this.t) * now_po[1] +
+          pow(this.t, 2) * now_po[3]
+        this.t = this.t + .035
+      } else if (this.type === 2) {
+        let pow = Math.pow
+
+        this.nx = pre_po[0] * pow((1 - this.t), 3) +
+          3 * now_po[0] * this.t * pow((1 - this.t), 2) +
+          3 * now_po[2] * pow(this.t, 2) * (1 - this.t) +
+          now_po[4] * pow(this.t, 3)
+
+        this.ny = pre_po[1] * pow((1 - this.t), 3) +
+          3 * now_po[1] * this.t * pow((1 - this.t), 2) +
+          3 * now_po[3] * pow(this.t, 2) * (1 - this.t) +
+          now_po[5] * pow(this.t, 3)
+        this.t = this.t + .035
+      }
+      Ctx2.initCtx()
+      Ctx2.lineJoin = "round"
+      Ctx2.lineCap = "round"
+      Ctx2.lineWidth = 1
+      Ctx2.lineTo(this.nx, this.ny)
+      Ctx2.strokeStyle = this.clr
+      Ctx2.stroke()
+      nodeXs.forEach((e, i) => { // 遍历节点x坐标数组
+        if (this.nx >= (e.x + CvsLeft) && !e.draw) {
+          let n = new CreateNode(this.nx, this.ny) // 创建节点
+          n.draw(Ctx)
+          let sx = this.nx - 11,
+            sy = this.ny - 11,
+            ex = this.nx + 11,
+            ey = this.ny + 11
+          Nodes.push(n)
+          NodesP.push({
+            sx,
+            sy,
+            ex,
+            ey
+          })
+          e.draw = true
+
+          let nf = new CreateNodeInfo(i, {
+            cx: this.nx,
+            cy: this.ny
+          }) // 创建节点信息
+          nf.create(Ctx)
+          NodesInfoObj.push(nf)
+
+        }
+      })
+    }
+  }
+
+  window.onmousemove = e => {
+    let xy = getEventPosition(e)
+    NodesP.forEach((e, i) => {
+      if (xy.x >= e.sx && xy.x <= e.ex && xy.y >= e.sy && xy.y <= e.ey) { // 进入节点
+        if (!e.mouseEnter) {
+          Nodes[i].light(Ctx)
+          NodesInfoObj[i].hoverEnter(Ctx)
+        }
+        e.preStatus = false
+        e.mouseEnter = true
+      } else {
+        if (!e.preStatus && e.mouseEnter) { // 退出节点
+          e.preStatus = true
+          Nodes[i].rt.j = 0
+          Nodes[i].rt.rat = 1
+          Nodes[i].dark(Ctx)
+          NodesInfoObj[i].hoverLeave(Ctx)
+        }
+        e.mouseEnter = false
+      }
+    })
+  }
+
+  function getEventPosition(ev) { // 获得鼠标坐标
+    var x, y
+    if (ev.layerX || ev.layerX == 0) {
+      x = ev.layerX
+      y = ev.layerY
+    } else if (ev.offsetX || ev.offsetX == 0) {
+      x = ev.offsetX
+      y = ev.offsetY
+    }
+    return {
+      x: x,
+      y: y
+    }
+  }
+
+  function Arc(x, y, i) {
+    Ctx.beginPath()
+    Ctx.arc(x, y, 5, 0, 2 * PI)
+    Ctx.strokeStyle = '#ff0'
+    Ctx.stroke()
+    Ctx.font = `18px bold 黑体`;
+    Ctx.fillStyle = '#f00';
+    Ctx.textAlign = "center";
+    Ctx.textBaseline = "middle";
+    Ctx.fillText(i, x + 15, y + 15);
+  }
+
+  function CreateNodeInfo(i, {
+    cx,
+    cy
+  }) { // 创建节点信息类
+    this.time = NodesInfo[i].time
+    this.title = NodesInfo[i].title
+    this.url = NodesInfo[i].url
+    this.dir = i % 2 === 0 ? 0 : 1
+    this.offsetX = NodesInfo[i].offsetX
+    this.imgNode = returnNode(this)
+    this.cx = cx
+    this.cy = this.dir === 0 ? cy : cy + 100
+    this.v = 1
+    this.a = .01
+    this.ga = .2
+    this.itv = null
+    this.floatOver = false
+    this.create = (ctx) => { // 初始化图文模块
+      // this.imgNode = returnNode(this)
+      setTimeout(() => {
+        ctx.initCtx()
+        ctx.beginPath()
+        if (this.dir === 0) {
+          ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250,
+            (this.url === '' ? 70 : 220))
+        }
+        if (this.dir === 1) {
+          ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy, 250, (this.url === '' ? 70 : 220))
+        }
+      }, 20)
+    }
+    this.startFloat = (ctx) => { // 上浮
+      ctx.initCtx()
+      ctx.globalAlpha = this.ga
+      if (this.dir === 0) {
+        ctx.clear(this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250, 230)
+        ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250, (this
+          .url === '' ? 70 : 220))
+      }
+      if (this.dir === 1) {
+        ctx.clear(this.cx - 125 + this.offsetX, this.cy, 250, 230)
+        ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy, 250, (this.url === '' ? 70 : 220))
+      }
+      this.ga += .02
+      this.cy = this.cy - this.v
+      this.v = this.v - this.a
+      if (this.v <= 0) {
+        this.floatOver = true
+        this.v = 1
+        this.a = .05
+      }
+    }
+    this.hoverEnter = (ctx) => {
+      console.log()
+      window.clearInterval(this.itv)
+      this.enterOver = false
+      this.leaveOver = false
+      this.itv = setInterval(() => {
+        ctx.initCtx()
+        if (this.dir === 0) {
+          ctx.clear(this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250, 230)
+          ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250,
+            (this
+              .url === '' ? 70 : 220))
+        }
+        if (this.dir === 1) {
+          ctx.clear(this.cx - 125 + this.offsetX, this.cy, 250, 230)
+          ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy, 250, (this.url === '' ? 70 : 220))
+        }
+        this.cy = this.cy - this.v
+        this.v = this.v - this.a
+        if (this.v <= 0) {
+          this.enterOver = true
+          this.v = 1
+          this.a = .05
+          window.clearInterval(this.itv)
+          this.itv = null
+        }
+      }, 16)
+    }
+    this.hoverLeave = (ctx) => {
+      window.clearInterval(this.itv)
+      this.leaveOver = false
+      this.itv = setInterval(() => {
+        ctx.initCtx()
+        if (this.dir === 0) {
+          ctx.clear(this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250, 230)
+          ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy - (this.url === '' ? 130 : 280), 250,
+            (this
+              .url === '' ? 70 : 220))
+        }
+        if (this.dir === 1) {
+          ctx.clear(this.cx - 125 + this.offsetX, this.cy, 250, 230)
+          ctx.drawImage(this.imgNode, this.cx - 125 + this.offsetX, this.cy, 250, (this.url === '' ? 70 : 220))
+        }
+        this.cy = this.cy + this.v
+        this.v = this.v - this.a
+        if (this.v <= 0) {
+          this.leaveOver = true
+          this.v = 1
+          this.a = .05
+          window.clearInterval(this.itv)
+          this.itv = null
+        }
+      }, 16)
+    }
+  }
+
+  function returnNode({
+    time,
+    title,
+    url
+  }) { // 返回一个绘制好的图文模块
+    let oc = document.createElement('canvas')
+    oct = oc.getContext('2d')
+    oc.width = 250
+    oc.height = url === '' ? 70 : 220
+    oct.textAlign = "center";
+    oct.textBaseline = "middle";
+    oct.font = `16px bold 黑体`
+    oct.fillStyle = '#fff'
+    oct.fillText(time, 125, 16)
+    oct.font = `14px bold 黑体`
+    oct.fillStyle = '#9FA6E1'
+    oct.fillText(title, 125, 52)
+    if (url !== '') {
+      let img = new Image()
+      img.width = 250
+      img.height = 150
+      img.src = url
+      img.onload = function () {
+        oct.drawImage(img, 0, 70, 250, 150)
+      }
+      img.onerror = (e) => {
+        console.log(e)
+      }
+    }
+    return oc
+  }
+</script>
+
+</html>

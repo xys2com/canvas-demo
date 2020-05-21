@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    padding: 0px;
+    margin: 0;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    background: #000;
+    color: #fff;
+    text-align: center;
+  }
+
+  * {
+    padding: 0;
+    margin: 0;
+  }
+
+  canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+</style>
+
+<body>
+  <div id="c" style="width: 100%;height: 100%;"></div>
+</body>
+<script>
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    return el.length === 1 ? el[0] : el
+  }
+  //定义范围内的随机数
+  function random(min, max) {
+    if (arguments.length < 2) {
+      max = min;
+      min = 0;
+    }
+    if (min > max) {
+      var hold = max;
+      max = min;
+      min = hold;
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+</script>
+<script>
+  const Line = function (id) {
+    let _W = $(id).clientWidth
+    $(id).height = _W / 2
+    let _H = $(id).clientHeight
+    let CVS = document.createElement('canvas')
+    let _CVS = document.createElement('canvas')
+    $(id).appendChild(CVS)
+    $(id).appendChild(_CVS)
+    CVS.style.zIndex = 10
+    _CVS.style.zIndex = 1
+    CVS.width = _W
+    CVS.height = _H
+    _CVS.width = _W
+    _CVS.height = _H
+    let CTX = CVS.getContext('2d')
+    let _CTX = _CVS.getContext('2d')
+
+    let ballShadowArr = []
+    let shadowBallLength = 30
+
+    function Line() {
+      this.clr = `hsla('${random(0, 359)}', 50%, 50%, ${random(6, 10) / 10})`
+    }
+
+    function Dot() {
+      this.clr = `hsla('${random(0, 359)}', 50%, 50%, ${random(6, 10) / 10})`
+    }
+    // let path = [
+    //   [70, 180],
+    //   [120, 190],
+    //   [170, 180],
+    //   [195, 180, 175, 200, 200, 200],
+    //   [300, 200],
+    //   [320, 200, 320, 220],
+    //   [320, 300],
+    //   [340, 320, 340, 340],
+    //   [400, 400],
+    //   [440, 420, 440, 440],
+    //   [35, 280, 15, 220, 250, 220],
+    //   [135, 180, 105, 420, 50, 120],
+    // ]
+    let path = randomPath()
+
+    function randomPath() {
+      let arr = []
+      for (let i = 0; i < 10; i++) {
+        let num = random(1, 3) * 2
+        let arrr = []
+        for (let j = 0; j < num; j++) {
+          j % 2 === 0 ? arrr.push(random(200, _W - 200)) : arrr.push(random(200, _H - 200))
+        }
+        arr.push(arrr)
+      }
+      return arr
+    }
+    // function drawLine(nx, ny) {
+    //   // CTX.beginPath()
+    //   // CTX.shadowOffsetX = 0;
+    //   // CTX.shadowOffsetY = 0;
+    //   // CTX.shadowColor = '#00f';
+    //   // CTX.shadowBlur = 10;
+
+    //   // if (nx && ny) {
+    //   //   CTX.fillStyle = 'rgba(0,0,0,.1)'
+    //   //   CTX.fillRect(0, 0, _W, _H)
+    //   //   CTX.beginPath()
+    //   //   CTX.arc(nx, ny, 1, 0, 2 * Math.PI)
+    //   //   CTX.fillStyle = '#b0655e'
+    //   //   CTX.fill()
+    //   // }
+
+    //   CTX.beginPath()
+    //   path.forEach((point, i) => {
+    //     if(i === 0) {
+    //       CTX.moveTo(...point)
+    //     } else if (i !== 0) {
+    //       if (point.length === 2) {
+    //         CTX.lineTo(...point)
+    //       } else if(point.length === 4) { // 二次贝塞尔曲线
+    //         CTX.quadraticCurveTo(...point)
+    //       } else if(point.length === 6) { // 三次贝塞尔曲线
+    //         CTX.bezierCurveTo(...point)
+    //       }
+    //     }
+    //   })
+    //   CTX.strokeStyle = '#fff'
+    //   CTX.stroke()
+    // }
+    // drawLine()
+    dotAnm()
+
+    function dotAnm() {
+      let nx = path[0][0],
+        ny = path[0][1],
+        frame = 0,
+        count = 0,
+        num = 1,
+        t = 0,
+        type = 0 // 0直线，1 二次bsr曲线，2 三次bsr曲线
+      const velocity = 5
+      count = GetDistance(path[num - 1][0], path[num - 1][1], path[num][0], path[num][1]) / velocity // 获得帧数
+
+      _CTX.arc(nx, ny, 10, 0, 2 * Math.PI)
+      anm()
+
+      function anm() {
+        if ((frame >= count) && type === 0 || (t >= 1) && (type === 1 || type === 2)) {
+          // 绘制一个点到另一个阶级判断 
+          if (num < (path.length - 1)) {
+            num++
+          } else {
+            // cancelAnimationFrame(window.anmF)
+            // _CTX.clearRect(0, 0, _W, _H)
+            // return
+            path = [...path, ...randomPath()]
+            num++
+          }
+          if (path[num].length === 2) { // 直线路径
+            type = 0
+            count = GetDistance(path[num - 1][0], path[num - 1][1], path[num][0], path[num][1]) / velocity // 获得帧数
+            frame = 0
+            t = 0
+          } else if (path[num].length === 4) { // 二次贝塞尔曲线路径
+            type = 1
+            let d = GetDistance(path[num - 1][0], path[num - 1][1], path[num][0], path[num][1]) +
+              GetDistance(path[num][0], path[num][1], path[num][2], path[num][3])
+            count = d / velocity
+            frame = 1 / count
+            t = 0
+          } else if (path[num].length === 6) { // 三次贝塞尔曲线路径
+            type = 2
+            let d = GetDistance(path[num - 1][0], path[num - 1][1], path[num][0], path[num][1]) +
+              GetDistance(path[num][2], path[num][3], path[num][0], path[num][1]) +
+              GetDistance(path[num][4], path[num][5], path[num][2], path[num][3])
+            count = d / velocity
+            frame = 1 / count
+            t = 0
+          }
+        }
+        let len = path[num - 1].length
+        let pre_po = [path[num - 1][len - 2], path[num - 1][len - 1]] // 获得路径系统 最后一个 坐标
+        let now_po = path[num]
+        // 计算坐标
+        if (type === 0) {
+          if (pre_po.length === 2) {
+            nx = (now_po[0] - pre_po[0]) * (frame / count) + pre_po[0]
+            ny = (now_po[1] - pre_po[1]) * (frame / count) + pre_po[1]
+          } else if (pre_po.length === 4) {
+            nx = (now_po[0] - pre_po[2]) * (frame / count) + pre_po[2]
+            ny = (now_po[1] - pre_po[3]) * (frame / count) + pre_po[3]
+          } else {
+            nx = (now_po[0] - pre_po[4]) * (frame / count) + pre_po[4]
+            ny = (now_po[1] - pre_po[5]) * (frame / count) + pre_po[5]
+          }
+          frame++
+        } else if (type === 1) {
+          let pow = Math.pow
+          nx = pow((1 - t), 2) * pre_po[0] +
+            2 * t * (1 - t) * now_po[0] +
+            pow(t, 2) * now_po[2]
+
+          ny = pow((1 - t), 2) * pre_po[1] +
+            2 * t * (1 - t) * now_po[1] +
+            pow(t, 2) * now_po[3]
+          t = t + frame
+        } else if (type === 2) {
+          let pow = Math.pow
+
+          nx = pre_po[0] * pow((1 - t), 3) +
+            3 * now_po[0] * t * pow((1 - t), 2) +
+            3 * now_po[2] * pow(t, 2) * (1 - t) +
+            now_po[4] * pow(t, 3)
+
+          ny = pre_po[1] * pow((1 - t), 3) +
+            3 * now_po[1] * t * pow((1 - t), 2) +
+            3 * now_po[3] * pow(t, 2) * (1 - t) +
+            now_po[5] * pow(t, 3)
+
+          t = t + frame
+        }
+
+        _CTX.clearRect(0, 0, _W, _H)
+        _CTX.beginPath()
+        _CTX.moveTo(200, 200)
+        _CTX.lineTo(_W - 200, 200)
+        _CTX.lineTo(_W - 200,_H - 200)
+        _CTX.lineTo(200,_H - 200)
+        _CTX.lineTo(200, 200)
+        _CTX.strokeStyle = '#4ec9b0'
+        _CTX.stroke()
+        
+        _CTX.shadowOffsetX = 0;
+        _CTX.shadowOffsetY = 0;
+        _CTX.shadowColor = '#4ec9b0';
+        _CTX.shadowBlur = 15;
+
+        _CTX.beginPath()
+        _CTX.arc(nx, ny, 5, 0, 2 * Math.PI)
+        _CTX.fillStyle = '##4ec9b0'
+        _CTX.globalAlpha = 1
+        _CTX.fill()
+        if (ballShadowArr.length <= shadowBallLength){
+          ballShadowArr.push({
+            x: nx,
+            y: ny
+          })
+        } else {
+          ballShadowArr.splice(0, 1)
+          ballShadowArr.push({
+            x: nx,
+            y: ny
+          })
+        }
+        shadowBall()
+        window.anmF = requestAnimationFrame(anm)
+      }
+    }
+
+    function shadowBall() { // 绘制拖尾
+      ballShadowArr.forEach((e, i) => {
+        let clr = `rgba(78, 201, 176, ${i / shadowBallLength * .4})`
+        _CTX.beginPath()
+        _CTX.arc(e.x, e.y, 5, 0, 2 * Math.PI)
+        _CTX.fillStyle = clr
+        _CTX.fill()
+      })
+    }
+  }
+
+  // 计算两点间的距离
+  function GetDistance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2)
+  }
+  window.onload = function () {
+    Line('#c')
+  }
+</script>
+
+</html>

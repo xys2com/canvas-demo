@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    padding: 0px;
+    margin: 0;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    background: #000;
+    color: #fff;
+    text-align: center;
+  }
+
+  * {
+    padding: 0;
+    margin: 0;
+  }
+
+  canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+</style>
+
+<body>
+  <div id="c" style="width: 100%;height: 100%;"></div>
+</body>
+<script>
+  const lg = console.log
+  const {
+    pow,
+    PI,
+    SQRT2,
+    sin,
+    cos,
+    tan,
+    sqrt
+  } = Math
+
+  function $(s) {
+    let el = document.querySelectorAll(s)
+    return el.length === 1 ? el[0] : el
+  }
+
+  function random(min, max) {
+    if (arguments.length < 2 && (max = min, min = 0), min > max) {
+      var a = max;
+      max = min, min = a
+    }
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+  // 计算两点间的距离
+  function GetDistance(x1, y1, x2, y2) {
+    return sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2)
+  }
+</script>
+<script>
+  // Ctx 用于绘制静态的一层，不会动的东西
+  // Ctx2 用于绘制动态的一层，比如运动的粒子
+  // PATH
+  var _W, _H, Ctx, Ctx2, PATH = [],
+    FLS = []
+  window.onload = function () {
+    Init('#c')
+  }
+  // 初始化
+  function Init(id) {
+    let Wrap = $(id)
+
+    _W = Wrap.clientWidth
+    _H = Wrap.clientHeight
+
+    let c = document.createElement('canvas')
+    let c2 = document.createElement('canvas')
+
+    c.width = _W
+    c.height = _H
+    c2.width = _W
+    c2.height = _H
+
+    c.style.zIndex = 1
+    c2.style.zIndex = 10
+
+    Wrap.appendChild(c)
+    Wrap.appendChild(c2)
+
+    Ctx = c.getContext('2d')
+    Ctx2 = c2.getContext('2d')
+    let count = 0
+    window.itv = window.setInterval(() => {
+      FLS.push(new FloatLight({
+        rgb: {
+          r: 255,
+          g: 255,
+          b: 255
+        },
+        trailing: false
+      }))
+      count++
+      if (count > 12) {
+        window.clearInterval(window.itv)
+      }
+    }, 800)
+    FLA()
+  }
+
+  function InitPath() {
+    let path = [],
+      dir = random(0, 1),
+      p = {
+        x: random(18, 22) * 10,
+        y: 200
+      },
+      nowY = p.y,
+      initY = random(10, 15)
+    path.push([p.x, p.y])
+    for (let i = 0; i < 5; i++) {
+      let randomX = random(12, 16),
+        x1 = dir === 0 ? randomX * i + p.x : p.x - randomX * i,
+        y1 = nowY - initY / 4,
+        x2 = dir === 0 ? p.x - randomX * i : p.x + randomX * i,
+        y2 = nowY - initY / 4 * 3,
+        x3 = p.x,
+        y3 = nowY - initY
+
+      nowY = nowY - initY
+      path.push([x1, y1, x2, y2, x3, y3])
+      initY += random(initY, (i * 20 + 20))
+    }
+    // path.forEach((point, i) => {
+    //   Ctx.lineJoin = "round"
+    //   if (i === 0) {
+    //     Ctx.lineWidth = 1
+    //     Ctx.moveTo(...point)
+    //   } else if (i !== 0) {
+    //     if (point.length === 2) {
+    //       Ctx.lineTo(...point)
+    //     } else if (point.length === 4) { // 二次贝塞尔曲线
+    //       Ctx.quadraticCurveTo(...point)
+    //     } else if (point.length === 6) { // 三次贝塞尔曲线
+    //       Ctx.bezierCurveTo(...point)
+    //     }
+    //   }
+    // })
+    // Ctx.strokeStyle = '#fff'
+    // Ctx.stroke()
+    console.log(path)
+    return path
+  }
+
+  function FloatLight({
+    rgb,
+    trailing,
+    trailingNum
+  }) {
+    this.path = InitPath()
+    this.nx = this.path[0][0]
+    this.ny = this.path[0][1]
+    this.frame = 0
+    this.count = 0
+    this.num = 1
+    this.t = 0
+    this.sizeRate = random(10, 20)
+    this.ga = random(3, 8) / 10
+    this.type = 0 // 0直线，1 二次bsr曲线，2 三次bsr曲线
+    this.velocity = random(30, 75) / 100
+    this.trailing = trailing ? trailing : false
+    this.trailingNum = trailing ? trailingNum : 0
+    this.rgb = rgb ? rgb : {
+      r: random(0, 255),
+      g: random(0, 255),
+      b: random(0, 255)
+    }
+    this.clr = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, 1)`
+    this.ballShadowArr = []
+
+    this.init = () => {
+      this.count = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+        .path[this.num][1]) / this.velocity // 获得当前路径的帧数
+      Ctx2.arc(this.nx, this.ny, 2, 0, 2 * Math.PI)
+    }
+
+    this.move = () => {
+      if ((this.frame >= this.count) && this.type === 0 || (this.t >= 1) && (this.type === 1 || this.type === 2)) {
+        // 绘制一个点到另一个阶级判断 
+        if (this.num < (this.path.length - 1)) {
+          this.num++
+        } else {
+          this.num = 1
+          this.path = InitPath()
+        }
+        if (this.path[this.num].length === 2) { // 直线路径
+          this.type = 0
+          this.count = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0],
+            this.path[this.num][
+              1
+            ]) / this.velocity // 获得帧数
+          this.frame = 0
+          this.t = 0
+        } else if (this.path[this.num].length === 4) { // 二次贝塞尔曲线路径
+          this.type = 1
+          let d = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+              .path[this.num][1]) +
+            GetDistance(this.path[this.num][0], this.path[this.num][1], this.path[this.num][2], this.path[this.num][
+              3
+            ])
+          this.count = d / this.velocity
+          this.frame = 1 / this.count
+          this.t = 0
+        } else if (this.path[this.num].length === 6) { // 三次贝塞尔曲线路径
+          this.type = 2
+          let d = GetDistance(this.path[this.num - 1][0], this.path[this.num - 1][1], this.path[this.num][0], this
+              .path[this.num][1]) +
+            GetDistance(this.path[this.num][2], this.path[this.num][3], this.path[this.num][0], this.path[this.num][
+              1
+            ]) +
+            GetDistance(this.path[this.num][4], this.path[this.num][5], this.path[this.num][2], this.path[this.num][
+              3
+            ])
+          this.count = d / this.velocity
+          this.frame = 1 / this.count * random(10, 15) / 10
+          this.t = 0
+        }
+      }
+      let len = this.path[this.num - 1].length
+      let pre_po = [this.path[this.num - 1][len - 2], this.path[this.num - 1][len - 1]] // 获得路径系统 最后一个 坐标
+      let now_po = this.path[this.num]
+
+      if (this.type === 0) {
+        if (pre_po.length === 2) {
+          this.nx = (now_po[0] - pre_po[0]) * (this.frame / this.count) + pre_po[0]
+          this.ny = (now_po[1] - pre_po[1]) * (this.frame / this.count) + pre_po[1]
+        } else if (pre_po.length === 4) {
+          this.nx = (now_po[0] - pre_po[2]) * (this.frame / this.count) + pre_po[2]
+          this.ny = (now_po[1] - pre_po[3]) * (this.frame / this.count) + pre_po[3]
+        } else {
+          this.nx = (now_po[0] - pre_po[4]) * (this.frame / this.count) + pre_po[4]
+          this.ny = (now_po[1] - pre_po[5]) * (this.frame / this.count) + pre_po[5]
+        }
+        this.frame++
+      } else if (this.type === 1) {
+        let pow = Math.pow
+        this.nx = pow((1 - this.t), 2) * pre_po[0] +
+          2 * this.t * (1 - this.t) * now_po[0] +
+          pow(this.t, 2) * now_po[2]
+
+        this.ny = pow((1 - this.t), 2) * pre_po[1] +
+          2 * this.t * (1 - this.t) * now_po[1] +
+          pow(this.t, 2) * now_po[3]
+        this.t = this.t + this.frame
+      } else if (this.type === 2) {
+        let pow = Math.pow
+
+        this.nx = pre_po[0] * pow((1 - this.t), 3) +
+          3 * now_po[0] * this.t * pow((1 - this.t), 2) +
+          3 * now_po[2] * pow(this.t, 2) * (1 - this.t) +
+          now_po[4] * pow(this.t, 3)
+
+        this.ny = pre_po[1] * pow((1 - this.t), 3) +
+          3 * now_po[1] * this.t * pow((1 - this.t), 2) +
+          3 * now_po[3] * pow(this.t, 2) * (1 - this.t) +
+          now_po[5] * pow(this.t, 3)
+
+        this.t = this.t + this.frame
+      }
+      Ctx2.shadowOffsetX = 0;
+      Ctx2.shadowOffsetY = 0;
+      Ctx2.shadowColor = this.clr;
+      Ctx2.shadowBlur = 10;
+      Ctx2.beginPath()
+      Ctx2.arc(this.nx, this.ny, random(15, 25) / this.sizeRate, 0, 2 * Math.PI)
+      Ctx2.fillStyle = this.clr
+      Ctx2.globalAlpha = this.ga
+      Ctx2.fill()
+      if (this.trailing) {
+        if (this.ballShadowArr.length <= this.trailingNum) {
+          this.ballShadowArr.push({
+            x: this.nx,
+            y: this.ny
+          })
+        } else {
+          this.ballShadowArr.splice(0, 1)
+          this.ballShadowArr.push({
+            x: this.nx,
+            y: this.ny
+          })
+        }
+        shadowBall(this.ballShadowArr, this.rgb, this.trailingNum)
+      }
+    }
+  }
+
+  function FLA() {
+    // let FLS = new FloatLight()
+    Ctx2.clearRect(0, 0, _W, _H)
+    FLS.forEach(e => {
+      e.move()
+    })
+    window.anmF = requestAnimationFrame(FLA)
+  }
+
+  function shadowBall(ballShadowArr, rgb) { // 绘制拖尾
+    ballShadowArr.forEach((e, i) => {
+      let clr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${i / 48 * .8})`
+      Ctx2.beginPath()
+      Ctx2.arc(e.x, e.y, 2, 0, 2 * Math.PI)
+      Ctx2.fillStyle = clr
+      Ctx2.fill()
+    })
+  }
+</script>
+
+</html>
