@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <body></body>
+  <script>
+    function $(s) {
+      let el = document.querySelectorAll(s);
+      if (el.length > 1) return el;
+      else return el[0];
+    }
+
+    function random(min, max) {
+      if (arguments.length < 2) {
+        max = min;
+        min = 0;
+      }
+      if (min > max) {
+        var hold = max;
+        max = min;
+        min = hold;
+      }
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    main();
+
+    function main() {
+      $("body").innerHTML = "";
+      $("html").style.height = "100%";
+      $("body").style.height = "100%";
+      let c = document.createElement("canvas");
+      c.id = "canvas";
+      $("body").appendChild(c);
+      c.style.background = "#fff";
+      c.width =
+        document.body.offsetWidth > 1900 ? 1920 : document.body.offsetWidth;
+      c.height =
+        document.body.offsetHeight > 900 ? 900 : document.body.offsetHeight;
+      let c_w = c.width;
+      let c_h = c.height;
+      let ctx = c.getContext("2d");
+      var angle = 10;
+      var hue = 100;
+      var apl = 0.3;
+      var key = true;
+      let rate = document.body.offsetWidth / 1200;
+      rate < 0.6 ? (rate = 0.6) : void 0;
+      rate > 1 ? (rate = 1) : void 0;
+      // drawText();
+      vm();
+      // 绘制心形曲线
+      function vm() {
+        var t = parseFloat(angle / Math.PI);
+        var x =
+          parseFloat(19.5 * (16 * Math.pow(Math.sin(t), 3))) * rate + c_w / 2;
+        var y =
+          parseFloat(
+            -20 *
+              (13 * Math.cos(t) -
+                5 * Math.cos(2 * t) -
+                2 * Math.cos(3 * t) -
+                Math.cos(4 * t))
+          ) *
+            rate +
+          c_h / 2;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 5;
+        ctx.lineTo(x, y);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#e99ea0";
+        ctx.stroke();
+        angle += 0.15;
+        let fm0 = window.requestAnimationFrame(vm);
+        if (angle > 30) {
+          ctx.fillStyle = "#e99ea0";
+          ctx.fill();
+          window.cancelAnimationFrame(fm0);
+          drawText();
+        }
+      }
+      // 绘制文字
+      function drawText() {
+        let rate2 = document.body.offsetWidth / 1200;
+        rate2 < 0.5 ? (rate2 = 0.5) : void 0;
+        rate2 > 0.9 ? (rate2 = 0.9) : void 0;
+        let x = c_w / 2 - 50,
+          y = c_h / 2 - 35 / 2,
+          x2 = x + 35,
+          x3 = x2 + 35,
+          tx = c_w * 0.1,
+          ty = c_h * 0.9;
+        // 数字5
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 30, y);
+        ctx.lineTo(x + 30, y + 5);
+        ctx.lineTo(x + 12, y + 5);
+        ctx.lineTo(x + 12, y + 12);
+        ctx.lineTo(x + 30, y + 12);
+        ctx.lineTo(x + 30, y + 35);
+        ctx.lineTo(x + 3, y + 35);
+        ctx.lineTo(x, y + 30);
+        ctx.lineTo(x + 20, y + 30);
+        ctx.lineTo(x + 20, y + 18);
+        ctx.lineTo(x, y + 18);
+        ctx.lineTo(x, y);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        // 数字2
+        ctx.beginPath();
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 + 30, y);
+        ctx.lineTo(x2 + 30, y + 18);
+        ctx.lineTo(x2 + 10, y + 20);
+        ctx.lineTo(x2 + 10, y + 30);
+        ctx.lineTo(x2 + 30, y + 30);
+        ctx.lineTo(x2 + 27, y + 35);
+        ctx.lineTo(x2, y + 35);
+        ctx.lineTo(x2, y + 12);
+        ctx.lineTo(x2 + 18, y + 10);
+        ctx.lineTo(x2 + 18, y + 5);
+        ctx.lineTo(x2, y + 5);
+        ctx.lineTo(x2, y);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        // 数字0
+        ctx.beginPath();
+        ctx.moveTo(x3, y);
+        ctx.lineTo(x3 + 30, y);
+        ctx.lineTo(x3 + 30, y + 35);
+        ctx.lineTo(x3, y + 35);
+        ctx.lineTo(x3, y);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x3 + 12, y + 5);
+        ctx.lineTo(x3 + 18, y + 5);
+        ctx.lineTo(x3 + 18, y + 30);
+        ctx.lineTo(x3 + 12, y + 30);
+        ctx.lineTo(x3 + 12, y + 5);
+        ctx.fillStyle = "#e99ea0";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.font = `${48 * rate2}px bold 黑体`;
+        ctx.fillStyle = "#eb9ea0";
+        ctx.textAlign = "center";
+        let name = getParByN("name");
+        let by = getParByN("by");
+        ctx.fillText("爱你哟", tx + 48 * 5 * rate2, ty + 35 * rate2);
+        ctx.fillText(
+          decodeURIComponent(name) || "亲爱的",
+          tx + 48 * 7 * rate2,
+          ty + 90 * rate2
+        );
+        ctx.font = `${48 * rate2}px bold 黑体`;
+        ctx.fillText(
+          `—— ${decodeURIComponent(by) || "404"}`,
+          tx + 500 * rate2,
+          ty + 90 * rate2
+        );
+      }
+    }
+    function getParByN(variable) {
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split("=");
+        if (pair[0] == variable) {
+          return pair[1];
+        }
+      }
+      return null;
+    }
+  </script>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      padding: 0px;
+      margin: 0;
+      font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+      box-sizing: border-box;
+      background: #000;
+      color: #fff;
+      text-align: center;
+    }
+
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+  </style>
+  <body>
+    <div id="c" style="width: 100%; height: 100%"></div>
+  </body>
+  <script>
+    const { pow, PI, SQRT2, sin, abs, cos, tan, sqrt } = Math;
+
+    function $(s) {
+      let el = document.querySelectorAll(s);
+      return el.length === 1 ? el[0] : el;
+    }
+
+    function random(min, max) {
+      if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+        var a = max;
+        (max = min), (min = a);
+      }
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function GetDistance(x1, y1, x2, y2) {
+      return sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2);
+    }
+  </script>
+  <script>
+    const path = [100, 100, 300, 300, 200, 600, 400, 600];
+    let W = document.body.clientWidth,
+      H = document.body.clientHeight,
+      C = document.createElement("canvas");
+
+    let ctx = C.getContext("2d");
+    $("#c").appendChild(C);
+    C.width = W;
+    C.height = H;
+    let mover = new Mover(path);
+    let nowTime = Date.now();
+    window.onload = () => {
+      main();
+      // mover.drawLine();
+    };
+
+    document.body.onmousemove = (e) => {
+      console.log(nowTime);
+      let _now_time_ = Date.now();
+      if (_now_time_ - nowTime < 300) {
+        return;
+      }
+      nowTime = _now_time_;
+    };
+
+    function main() {
+      // mover.drawLine();
+      mover.bseMove();
+      requestAnimationFrame(main);
+    }
+
+    function Mover(path) {
+      this.nx = 0;
+      this.ny = 0;
+      this.frame = 0;
+      this.count = 0;
+      this.num = 1;
+      this.t = 0;
+      this.type = 0; // 0直线，1 二次bsr曲线，2 三次bsr曲线
+      this.velocity = 2;
+      this.path = path;
+      this.rgb = {
+        r: random(0, 255),
+        g: random(0, 255),
+        b: random(0, 255),
+      };
+      this.clr = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, 1)`;
+      this.ballShadowArr = [];
+
+      this.drawLine = () => {
+        if (this.path.length === 8) {
+          ctx.save();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = this.clr;
+          let [x1, y1, x2, y2, x3, y3, x4, y4] = this.path;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+          ctx.stroke();
+          ctx.closePath();
+        }
+      };
+      this.bseMove = () => {
+        ctx.clearRect(0, 0, W, H);
+        let [x1, y1, x2, y2, x3, y3, x4, y4] = this.path;
+        // let d =
+        //   GetDistance(x1, y1, x2, y2) +
+        //   GetDistance(x2, y2, x3, y3) +
+        //   GetDistance(x3, y3, x4, y4);
+        // this.count = d / this.velocity;
+        // this.frame = 1 / this.count;
+        if (this.t >= 1) {
+          this.t = 0;
+        }
+
+        this.nx =
+          x1 * pow(1 - this.t, 3) +
+          3 * x2 * this.t * pow(1 - this.t, 2) +
+          3 * x3 * pow(this.t, 2) * (1 - this.t) +
+          x4 * pow(this.t, 3);
+
+        this.ny =
+          y1 * pow(1 - this.t, 3) +
+          3 * y2 * this.t * pow(1 - this.t, 2) +
+          3 * y3 * pow(this.t, 2) * (1 - this.t) +
+          y4 * pow(this.t, 3);
+
+        this.t = this.t + 0.002;
+        ctx.save();
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowColor = this.clr;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(this.nx, this.ny, 2 * (1 + this.t), 0, 2 * Math.PI);
+        ctx.fillStyle = this.clr;
+        ctx.globalAlpha = 1;
+        ctx.fill();
+        ctx.restore();
+        // if (this.ballShadowArr.length <= 48) {
+        //   this.ballShadowArr.push({
+        //     x: this.nx,
+        //     y: this.ny,
+        //     r: 2 * (1 + this.t),
+        //   });
+        // } else {
+        //   this.ballShadowArr.splice(0, 1);
+        //   this.ballShadowArr.push({
+        //     x: this.nx,
+        //     y: this.ny,
+        //     r: 2 * (1 + this.t),
+        //   });
+        // }
+        // shadowBall(this.ballShadowArr, this.rgb);
+      };
+    }
+    function shadowBall(ballShadowArr, rgb) {
+      // 绘制拖尾
+      ballShadowArr.forEach((e, i) => {
+        let clr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${(i / 48) * 0.8})`;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r, 0, 2 * Math.PI);
+        ctx.fillStyle = clr;
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+  </script>
+</html>

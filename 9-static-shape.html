@@ -1,511 +1,616 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
-</head>
-<style>
-  html,
-  body {
-    height: 100%;
-  }
-
-  body {
-    padding: 0px;
-    margin: 0;
-    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
-    box-sizing: border-box;
-    background: #000;
-    color: #fff;
-    text-align: center;
-  }
-
-  * {
-    padding: 0;
-    margin: 0;
-  }
-
-  canvas {
-    position: absolute;
-    top: 12.5%;
-    left: 12.5%;
-  }
-
-  #ny {
-    background: #1c2033;
-  }
-</style>
-
-<body>
-  <canvas id="ny"></canvas>
-</body>
-<script>
-  function $(s) {
-    let el = document.querySelectorAll(s)
-    return el.length === 1 ? el[0] : el
-  }
-  //定义范围内的随机数
-  function random(min, max) {
-    if (arguments.length < 2) {
-      max = min;
-      min = 0;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <style>
+    html,
+    body {
+      height: 100%;
     }
-    if (min > max) {
-      var hold = max;
-      max = min;
-      min = hold;
+
+    body {
+      padding: 0px;
+      margin: 0;
+      font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+      box-sizing: border-box;
+      background: #000;
+      color: #fff;
+      text-align: center;
     }
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-</script>
 
-
-<script>
-  var BODY_WIDTH, BODY_HEIGHT
-  var CANVAS = $('#ny')
-  var CTX = CANVAS.getContext('2d')
-  var CLR_0 = '#eec87e'
-  var CLR_1 = '#b0655e'
-  window.onload = function () {
-    init()
-  }
-
-  function init() {
-    BODY_WIDTH = $('body').clientWidth * 3 / 4
-    BODY_HEIGHT = $('body').clientHeight * 3 / 4
-    CANVAS.width = BODY_WIDTH
-    CANVAS.height = BODY_HEIGHT
-    let sj = new Triangle({
-      color: CLR_1,
-      fill: false,
-      fillClr: CLR_1
-    })
-    sj.draw(CTX)
-
-    let wj = new Pentagram({
-      color: CLR_1,
-      fill: false,
-      n: 5,
-      fillClr: CLR_1
-    })
-    wj.draw(CTX)
-
-    let st = new FlashStar({
-      size: 20,
-      color: CLR_1
-    })
-    st.draw(CTX)
-
-    let cl = new Gear({
-      size: 50,
-      color: CLR_1
-    })
-    cl.draw(CTX)
-
-    let yj = new Pentagram({
-      peak: {
-        x: 500,
-        y: 70
-      },
-      sizeR: 80,
-      sizer: 40,
-      color: CLR_1,
-      fill: false,
-      n: 10,
-      fillClr: CLR_1,
-      cir: true
-    })
-    yj.draw(CTX)
-
-    let fx = new Square({
-      peak: {
-        x: 650,
-        y: 70
-      },
-      size: 100,
-      cir: true,
-      rotate: true
-    })
-    fx.draw(CTX)
-  }
-  // 等腰三角形 fun
-  // peak:{ x, y }： 顶点， height： 高，  length: 底长， 
-  // color: 线条颜色，  direction：顶部到底部的朝向0，
-  // fill 是否填充， fillClr 填充色， 默认线条颜色
-  function Triangle(option = {}) {
-    this.peak = option.peak || {
-      x: 100,
-      y: 20
+    * {
+      padding: 0;
+      margin: 0;
     }
-    this.height = option.height || 100
-    this.length = option.length || 100
-    this.color = option.color || CLR_0
-    this.direction = option.direction || 'down'
-    this.fill = option.fill || false
-    this.fillClr = option.fillClr || this.color
-    this.draw = (ctx) => {
-      ctx.beginPath()
-      ctx.moveTo(this.peak.x, this.peak.y)
-      switch (this.direction) {
-        case 'down':
-          ctx.lineTo(this.peak.x - this.length / 2, this.peak.y + this.height)
-          ctx.lineTo(this.peak.x + this.length / 2, this.peak.y + this.height)
-          break;
-        case 'up':
-          ctx.lineTo(this.peak.x - this.length / 2, this.peak.y - this.height)
-          ctx.lineTo(this.peak.x + this.length / 2, this.peak.y - this.height)
-          break;
-        case 'left':
-          ctx.lineTo(this.peak.x - this.height, this.peak.y - this.length / 2)
-          ctx.lineTo(this.peak.x - this.height, this.peak.y + this.length / 2)
-          break;
-        case 'right':
-          ctx.lineTo(this.peak.x + this.height, this.peak.y - this.length / 2)
-          ctx.lineTo(this.peak.x + this.height, this.peak.y + this.length / 2)
-          break;
-        default:
-          break;
+
+    canvas {
+      position: absolute;
+      top: 12.5%;
+      left: 12.5%;
+    }
+
+    #ny {
+      background: #1c2033;
+    }
+  </style>
+
+  <body>
+    <canvas id="ny"></canvas>
+  </body>
+  <script>
+    function $(s) {
+      let el = document.querySelectorAll(s);
+      return el.length === 1 ? el[0] : el;
+    }
+    //定义范围内的随机数
+    function random(min, max) {
+      if (arguments.length < 2) {
+        max = min;
+        min = 0;
       }
-      ctx.lineTo(this.peak.x, this.peak.y)
-      ctx.strokeStyle = this.color
-      ctx.stroke()
-      ctx.fillStyle = this.fillClr
-      this.fill ? ctx.fill() : void 0
-      ctx.closePath()
-    }
-  }
-  // n角星 cir 是否圆角 
-  // sizeR 外接圆半径，sizer 内接圆半径
-  // cir 是否使用圆角
-  function Pentagram(option = {}) {
-    this.n = option.n || 5
-    this.peak = option.peak || {
-      x: 200,
-      y: 70
-    }
-    this.sizeR = option.sizeR || 60
-    this.sizer = option.sizer || this.sizeR / 3
-    this.color = option.color || CLR_0
-    this.fill = option.fill || false
-    this.fillClr = option.fillClr || this.color
-    this.cir = option.cir || false
-    this.draw = (ctx) => {
-      this.cir ? 
-      drawMultiDegStarCir(ctx, this.n, this.lineClr, this.fillClr, this.fill, this.peak.x, this.peak.y, this.sizeR, this
-        .sizer, 0, true) :
-      drawMultiDegStar(ctx, this.n, this.lineClr, this.fillClr, this.fill, this.peak.x, this.peak.y, this.sizeR, this
-        .sizer)
-      // drawMultiDeg0(ctx, this.n, this.lineClr, this.peak.x + 150, this.peak.y, this.sizeR)
-      // drawMultiDeg1(ctx, this.n, this.lineClr, this.fillClr, this.fill, this.peak.x + 300, this.peak.y, this.sizeR)
-    }
-    // 常规画法
-    /**
-     * 
-     * @param { ctx: 画笔 }
-     * @param { n: 星星角数量 }
-     * @param { lineClr: 线条颜色 }
-     * @param { fillClr: 填充色 }
-     * @param { fill: 是否填充 } 
-     * @param { x: 横坐标 }
-     * @param { y: 纵坐标 }
-     * @param { R: 外接圆半径 }
-     * @param { r: 内接圆半径 }
-     * @param { rot: 初始偏转角度 }
-     * @param { cir: 是否使用圆角 }
-     */
-    function drawMultiDegStar(ctx, n, lineClr, fillClr, fill, x, y, R, r, rot = 0, cir = false) {
-      let deg = 360 / n
-      let ang = 90 / n
-      ctx.beginPath();
-      for (var i = 0; i < n; i++) {
-        let dotR = {
-          x: Math.cos((ang + deg * i - rot) / 180 * Math.PI) * R + x,
-          y: -Math.sin((ang + deg * i - rot) / 180 * Math.PI) * R + y
-        }
-        let dotr = {
-          x: Math.cos((3 * ang + deg * i - rot) / 180 * Math.PI) * r + x,
-          y: -Math.sin((3 * ang + deg * i - rot) / 180 * Math.PI) * r + y
-        }
-        ctx.lineTo(dotR.x, dotR.y);
-        ctx.lineTo(dotr.x, dotr.y);
+      if (min > max) {
+        var hold = max;
+        max = min;
+        min = hold;
       }
-      ctx.closePath();
-      fill ? ctx.fill() : void 0
-      ctx.stroke();
+      return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    function drawMultiDegStarCir(ctx, n, lineClr, fillClr, fill, x, y, R, r, rot = 0, cir = false) {
-      let deg = 360 / n
-      let ang = 90 / n
-      ctx.beginPath();
-      // ctx.arc(x,y, R, 0, 2 * Math.PI)
-      // ctx.closePath()
-      // ctx.arc(x,y, r + (R - r)/2, 0, 2 * Math.PI)
-      // ctx.arc(x,y, r, 0, 2 * Math.PI)
-      let lastDot = {
-        x: Math.cos((3 * ang + deg * (n - 1) - rot) / 180 * Math.PI) * r + x,
-        y: -Math.sin((3 * ang + deg * (n - 1) - rot) / 180 * Math.PI) * r + y
-      }
-      ctx.moveTo(lastDot.x, lastDot.y) // 从终点开始
-      for (var i = 0; i < n; i++) {
-        let dotR = {
-          x: Math.cos((ang + deg * i - rot) / 180 * Math.PI) * R + x,
-          y: -Math.sin((ang + deg * i - rot) / 180 * Math.PI) * R + y
-        }
-        let dotr = {
-          x: Math.cos((3 * ang + deg * i - rot) / 180 * Math.PI) * r + x,
-          y: -Math.sin((3 * ang + deg * i - rot) / 180 * Math.PI) * r + y
-        }
-        let _dot = { // 
-          x: Math.cos((ang + deg * i - rot) / 180 * Math.PI) * (r + (R - r)/2) + x,
-          y: -Math.sin((ang + deg * i - rot) / 180 * Math.PI) * (r + (R - r)/2) + y
-        }
-        let dot_ = { // 
-          x: i === n - 1 ? Math.cos((3 * ang + deg * 0 - rot) / 180 * Math.PI) * (r + (R - r)/2) + x : Math.cos((3 * ang + deg * (i + 1) - rot) / 180 * Math.PI) * (r + (R - r)/2) + x,
-          y: i === n - 1 ? -Math.sin((3 * ang + deg * 0 - rot) / 180 * Math.PI) * (r + (R - r)/2) + y : -Math.sin((3 * ang + deg * (i + 1) - rot) / 180 * Math.PI) * (r + (R - r)/2) + y
-        }
-        // if(i === 0){
-        //   let a1 = arc('#f00')
-        //   let a2 = arc()
-        //   let a3 = arc('#0f0')
-        //   ctx.drawImage(a1, lastDot.x - 3, lastDot.y - 3, 6, 6)
-        //   ctx.drawImage(a2, dotR.x - 3, dotR.y - 3, 6, 6)
-        //   ctx.drawImage(a2, dotr.x - 3, dotr.y - 3, 6, 6)
-        //   ctx.drawImage(a3, _dot.x - 3, _dot.y - 3, 6, 6)
-        //   // ctx.drawImage(a3, dot_.x - 3, dot_.y - 3, 6, 6)
-        // }
-        ctx.quadraticCurveTo(dotR.x, dotR.y, dotr.x, dotr.y)
-      }
-      ctx.closePath();
-      fill ? ctx.fill() : void 0
-      ctx.stroke();
-    }
-    // 跳一角画法 交叉画法
-    function drawMultiDeg0(ctx, n, color, x, y, r) {
-      if (color)
-        ctx.strokeStyle = color;
-      var deg = getDegree(n);
-      ctx.beginPath();
-      for (i = 0; i < n; i++) {
-        var sintheta = Math.sin(deg * i);
-        var costheta = Math.cos(deg * i);
-        ctx.lineTo(x + r * sintheta, y + r * costheta);
-      }
-      ctx.closePath();
-      ctx.stroke();
+  </script>
 
-      function getDegree(n) {
-        for (var k = Math.ceil(n / 4); k < n; k++) {
-          var flag = [];
-          var current = 0;
-          initArr(flag, 1, n);
-          for (j = 0; j < n; j++) {
-            flag[current] = 0;
-            current = (current + k) % n;
-            if (sum(flag, n) === 0) {
-              return k * Math.PI * 2 / n;
+  <script>
+    var BODY_WIDTH, BODY_HEIGHT;
+    var CANVAS = $("#ny");
+    var CTX = CANVAS.getContext("2d");
+    var CLR_0 = "#eec87e";
+    var CLR_1 = "#b0655e";
+    window.onload = function () {
+      init();
+    };
+
+    function init() {
+      BODY_WIDTH = ($("body").clientWidth * 3) / 4;
+      BODY_HEIGHT = ($("body").clientHeight * 3) / 4;
+      CANVAS.width = BODY_WIDTH;
+      CANVAS.height = BODY_HEIGHT;
+      let sj = new Triangle({
+        color: CLR_1,
+        fill: false,
+        fillClr: CLR_1,
+      });
+      sj.draw(CTX);
+
+      let wj = new Pentagram({
+        color: CLR_1,
+        fill: false,
+        n: 5,
+        fillClr: CLR_1,
+      });
+      wj.draw(CTX);
+
+      let st = new FlashStar({
+        size: 20,
+        color: CLR_1,
+      });
+      st.draw(CTX);
+
+      let cl = new Gear({
+        size: 50,
+        color: CLR_1,
+      });
+      cl.draw(CTX);
+
+      let yj = new Pentagram({
+        peak: {
+          x: 500,
+          y: 70,
+        },
+        sizeR: 80,
+        sizer: 40,
+        color: CLR_1,
+        fill: false,
+        n: 10,
+        fillClr: CLR_1,
+        cir: true,
+      });
+      yj.draw(CTX);
+
+      let fx = new Square({
+        peak: {
+          x: 650,
+          y: 70,
+        },
+        size: 100,
+        cir: true,
+        rotate: true,
+      });
+      fx.draw(CTX);
+    }
+    // 等腰三角形 fun
+    // peak:{ x, y }： 顶点， height： 高，  length: 底长，
+    // color: 线条颜色，  direction：顶部到底部的朝向0，
+    // fill 是否填充， fillClr 填充色， 默认线条颜色
+    function Triangle(option = {}) {
+      this.peak = option.peak || {
+        x: 100,
+        y: 20,
+      };
+      this.height = option.height || 100;
+      this.length = option.length || 100;
+      this.color = option.color || CLR_0;
+      this.direction = option.direction || "down";
+      this.fill = option.fill || false;
+      this.fillClr = option.fillClr || this.color;
+      this.draw = (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(this.peak.x, this.peak.y);
+        switch (this.direction) {
+          case "down":
+            ctx.lineTo(
+              this.peak.x - this.length / 2,
+              this.peak.y + this.height
+            );
+            ctx.lineTo(
+              this.peak.x + this.length / 2,
+              this.peak.y + this.height
+            );
+            break;
+          case "up":
+            ctx.lineTo(
+              this.peak.x - this.length / 2,
+              this.peak.y - this.height
+            );
+            ctx.lineTo(
+              this.peak.x + this.length / 2,
+              this.peak.y - this.height
+            );
+            break;
+          case "left":
+            ctx.lineTo(
+              this.peak.x - this.height,
+              this.peak.y - this.length / 2
+            );
+            ctx.lineTo(
+              this.peak.x - this.height,
+              this.peak.y + this.length / 2
+            );
+            break;
+          case "right":
+            ctx.lineTo(
+              this.peak.x + this.height,
+              this.peak.y - this.length / 2
+            );
+            ctx.lineTo(
+              this.peak.x + this.height,
+              this.peak.y + this.length / 2
+            );
+            break;
+          default:
+            break;
+        }
+        ctx.lineTo(this.peak.x, this.peak.y);
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.fillStyle = this.fillClr;
+        this.fill ? ctx.fill() : void 0;
+        ctx.closePath();
+      };
+    }
+
+    // n角星 cir 是否圆角
+    // sizeR 外接圆半径，sizer 内接圆半径
+    // cir 是否使用圆角
+    function Pentagram(option = {}) {
+      this.n = option.n || 5;
+      this.peak = option.peak || {
+        x: 200,
+        y: 70,
+      };
+      this.sizeR = option.sizeR || 60;
+      this.sizer = option.sizer || this.sizeR / 3;
+      this.color = option.color || CLR_0;
+      this.fill = option.fill || false;
+      this.fillClr = option.fillClr || this.color;
+      this.cir = option.cir || false;
+      this.draw = (ctx) => {
+        this.cir
+          ? drawMultiDegStarCir(
+              ctx,
+              this.n,
+              this.lineClr,
+              this.fillClr,
+              this.fill,
+              this.peak.x,
+              this.peak.y,
+              this.sizeR,
+              this.sizer,
+              0,
+              true
+            )
+          : drawMultiDegStar(
+              ctx,
+              this.n,
+              this.lineClr,
+              this.fillClr,
+              this.fill,
+              this.peak.x,
+              this.peak.y,
+              this.sizeR,
+              this.sizer
+            );
+        // drawMultiDeg0(ctx, this.n, this.lineClr, this.peak.x + 150, this.peak.y, this.sizeR)
+        // drawMultiDeg1(ctx, this.n, this.lineClr, this.fillClr, this.fill, this.peak.x + 300, this.peak.y, this.sizeR)
+      };
+      // 常规画法
+      /**
+       *
+       * @param { ctx: 画笔 }
+       * @param { n: 星星角数量 }
+       * @param { lineClr: 线条颜色 }
+       * @param { fillClr: 填充色 }
+       * @param { fill: 是否填充 }
+       * @param { x: 横坐标 }
+       * @param { y: 纵坐标 }
+       * @param { R: 外接圆半径 }
+       * @param { r: 内接圆半径 }
+       * @param { rot: 初始偏转角度 }
+       * @param { cir: 是否使用圆角 }
+       */
+      function drawMultiDegStar(
+        ctx,
+        n,
+        lineClr,
+        fillClr,
+        fill,
+        x,
+        y,
+        R,
+        r,
+        rot = 0,
+        cir = false
+      ) {
+        let deg = 360 / n;
+        let ang = 90 / n;
+        ctx.beginPath();
+        for (var i = 0; i < n; i++) {
+          let dotR = {
+            x: Math.cos(((ang + deg * i - rot) / 180) * Math.PI) * R + x,
+            y: -Math.sin(((ang + deg * i - rot) / 180) * Math.PI) * R + y,
+          };
+          let dotr = {
+            x: Math.cos(((3 * ang + deg * i - rot) / 180) * Math.PI) * r + x,
+            y: -Math.sin(((3 * ang + deg * i - rot) / 180) * Math.PI) * r + y,
+          };
+          ctx.lineTo(dotR.x, dotR.y);
+          ctx.lineTo(dotr.x, dotr.y);
+        }
+        ctx.closePath();
+        fill ? ctx.fill() : void 0;
+        ctx.stroke();
+      }
+      function drawMultiDegStarCir(
+        ctx,
+        n,
+        lineClr,
+        fillClr,
+        fill,
+        x,
+        y,
+        R,
+        r,
+        rot = 0,
+        cir = false
+      ) {
+        let deg = 360 / n;
+        let ang = 90 / n;
+        ctx.beginPath();
+        // ctx.arc(x,y, R, 0, 2 * Math.PI)
+        // ctx.closePath()
+        // ctx.arc(x,y, r + (R - r)/2, 0, 2 * Math.PI)
+        // ctx.arc(x,y, r, 0, 2 * Math.PI)
+        let lastDot = {
+          x:
+            Math.cos(((3 * ang + deg * (n - 1) - rot) / 180) * Math.PI) * r + x,
+          y:
+            -Math.sin(((3 * ang + deg * (n - 1) - rot) / 180) * Math.PI) * r +
+            y,
+        };
+        ctx.moveTo(lastDot.x, lastDot.y); // 从终点开始
+        for (var i = 0; i < n; i++) {
+          let dotR = {
+            x: Math.cos(((ang + deg * i - rot) / 180) * Math.PI) * R + x,
+            y: -Math.sin(((ang + deg * i - rot) / 180) * Math.PI) * R + y,
+          };
+          let dotr = {
+            x: Math.cos(((3 * ang + deg * i - rot) / 180) * Math.PI) * r + x,
+            y: -Math.sin(((3 * ang + deg * i - rot) / 180) * Math.PI) * r + y,
+          };
+          let _dot = {
+            //
+            x:
+              Math.cos(((ang + deg * i - rot) / 180) * Math.PI) *
+                (r + (R - r) / 2) +
+              x,
+            y:
+              -Math.sin(((ang + deg * i - rot) / 180) * Math.PI) *
+                (r + (R - r) / 2) +
+              y,
+          };
+          let dot_ = {
+            //
+            x:
+              i === n - 1
+                ? Math.cos(((3 * ang + deg * 0 - rot) / 180) * Math.PI) *
+                    (r + (R - r) / 2) +
+                  x
+                : Math.cos(((3 * ang + deg * (i + 1) - rot) / 180) * Math.PI) *
+                    (r + (R - r) / 2) +
+                  x,
+            y:
+              i === n - 1
+                ? -Math.sin(((3 * ang + deg * 0 - rot) / 180) * Math.PI) *
+                    (r + (R - r) / 2) +
+                  y
+                : -Math.sin(((3 * ang + deg * (i + 1) - rot) / 180) * Math.PI) *
+                    (r + (R - r) / 2) +
+                  y,
+          };
+          // if(i === 0){
+          //   let a1 = arc('#f00')
+          //   let a2 = arc()
+          //   let a3 = arc('#0f0')
+          //   ctx.drawImage(a1, lastDot.x - 3, lastDot.y - 3, 6, 6)
+          //   ctx.drawImage(a2, dotR.x - 3, dotR.y - 3, 6, 6)
+          //   ctx.drawImage(a2, dotr.x - 3, dotr.y - 3, 6, 6)
+          //   ctx.drawImage(a3, _dot.x - 3, _dot.y - 3, 6, 6)
+          //   // ctx.drawImage(a3, dot_.x - 3, dot_.y - 3, 6, 6)
+          // }
+          ctx.quadraticCurveTo(dotR.x, dotR.y, dotr.x, dotr.y);
+        }
+        ctx.closePath();
+        fill ? ctx.fill() : void 0;
+        ctx.stroke();
+      }
+      // 跳一角画法 交叉画法
+      function drawMultiDeg0(ctx, n, color, x, y, r) {
+        if (color) ctx.strokeStyle = color;
+        var deg = getDegree(n);
+        ctx.beginPath();
+        for (i = 0; i < n; i++) {
+          var sintheta = Math.sin(deg * i);
+          var costheta = Math.cos(deg * i);
+          ctx.lineTo(x + r * sintheta, y + r * costheta);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        function getDegree(n) {
+          for (var k = Math.ceil(n / 4); k < n; k++) {
+            var flag = [];
+            var current = 0;
+            initArr(flag, 1, n);
+            for (j = 0; j < n; j++) {
+              flag[current] = 0;
+              current = (current + k) % n;
+              if (sum(flag, n) === 0) {
+                return (k * Math.PI * 2) / n;
+              }
             }
           }
-        }
-        return -1;
+          return -1;
 
-        function initArr(arr, value, count) {
-          for (var i = 0; i < count; i++) {
-            arr[i] = value;
+          function initArr(arr, value, count) {
+            for (var i = 0; i < count; i++) {
+              arr[i] = value;
+            }
+          }
+
+          function sum(arr, n) {
+            var sum = 0;
+            for (var i = 0; i < n; i++) {
+              sum = sum + arr[i];
+            }
+            return sum;
           }
         }
-
-        function sum(arr, n) {
-          var sum = 0;
-          for (var i = 0; i < n; i++) {
-            sum = sum + arr[i];
-          }
-          return sum;
+      }
+      // 跳两角画法 交叉画法
+      function drawMultiDeg1(ctx, n, lineClr, fillClr, fill, x, y, r) {
+        ctx.beginPath();
+        ctx.fillStyle = fillClr;
+        ctx.strokeStyle = lineClr;
+        var dig =
+          n % 2 === 0 ? (Math.PI / n) * (n - 2) : (Math.PI / n) * (n - 1);
+        var nx, ny;
+        for (var i = 0; i < n; i++) {
+          nx = Math.sin(i * dig);
+          ny = Math.cos(i * dig);
+          ctx.lineTo(x + nx * r, y + ny * r);
         }
+        ctx.lineTo(x + Math.sin(0) * r, y + Math.cos(0) * r);
+        ctx.stroke();
+        ctx.fillStyle = fillClr;
+        fill ? ctx.fill() : void 0;
+        ctx.closePath();
       }
     }
-    // 跳两角画法 交叉画法
-    function drawMultiDeg1(ctx, n, lineClr, fillClr, fill, x, y, r) {
-      ctx.beginPath();
-      ctx.fillStyle = fillClr
-      ctx.strokeStyle = lineClr
-      var dig = n % 2 === 0 ? Math.PI / n * (n - 2) : Math.PI / n * (n - 1);
-      var nx, ny
-      for (var i = 0; i < n; i++) {
-        nx = Math.sin(i * dig);
-        ny = Math.cos(i * dig);
-        ctx.lineTo(x + nx * r, y + ny * r)
-      }
-      ctx.lineTo(x + Math.sin(0) * r, y + Math.cos(0) * r)
-      ctx.stroke()
-      ctx.fillStyle = fillClr
-      fill ? ctx.fill() : void 0
-      ctx.closePath()
-    }
-  }
-  // flashStar 闪烁的星星
-  function FlashStar(option = {}) {
-    this.size = option.size
-    this.rate = random(8000, 9500) / 10000
-    this.color = option.color || CLR_0
-    this.peak = {
-      x: 300,
-      y: 70
-    }
-    this.draw = (ctx) => {
-      ctx.beginPath()
-      ctx.lineWidth = 1.5
-      ctx.moveTo(this.peak.x, this.peak.y - this.size)
-      ctx.lineTo(this.peak.x, this.peak.y + this.size)
 
-      ctx.moveTo(this.peak.x - this.size, this.peak.y)
-      ctx.lineTo(this.peak.x + this.size, this.peak.y)
+    // flashStar 闪烁的星星
+    function FlashStar(option = {}) {
+      this.size = option.size;
+      this.rate = random(8000, 9500) / 10000;
+      this.color = option.color || CLR_0;
+      this.peak = {
+        x: 300,
+        y: 70,
+      };
+      this.draw = (ctx) => {
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(this.peak.x, this.peak.y - this.size);
+        ctx.lineTo(this.peak.x, this.peak.y + this.size);
 
-      ctx.moveTo(this.peak.x + this.size / 2, this.peak.y + this.size / 2)
-      ctx.lineTo(this.peak.x - this.size / 2, this.peak.y - this.size / 2)
+        ctx.moveTo(this.peak.x - this.size, this.peak.y);
+        ctx.lineTo(this.peak.x + this.size, this.peak.y);
 
-      ctx.moveTo(this.peak.x - this.size / 2, this.peak.y + this.size / 2)
-      ctx.lineTo(this.peak.x + this.size / 2, this.peak.y - this.size / 2)
-      ctx.strokeStyle = this.color
-      ctx.stroke()
-      ctx.closePath()
-      ctx.lineWidth = 1
+        ctx.moveTo(this.peak.x + this.size / 2, this.peak.y + this.size / 2);
+        ctx.lineTo(this.peak.x - this.size / 2, this.peak.y - this.size / 2);
+
+        ctx.moveTo(this.peak.x - this.size / 2, this.peak.y + this.size / 2);
+        ctx.lineTo(this.peak.x + this.size / 2, this.peak.y - this.size / 2);
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.closePath();
+        ctx.lineWidth = 1;
+      };
     }
-  }
-  // 线条圆齿
-  function Gear(option = {}) {
-    this.size = option.size || 100
-    this.num = option.num || 20
-    this.color = option.color || CLR_0
-    this.peak = {
-      x: 400,
-      y: 70
-    }
-    this.draw = (ctx) => {
-      let R = this.size
-      let r = this.size / 5
-      for (let i = 0; i < this.num; i++) {
-        let dotr = {
-          x: this.peak.x + Math.sin(2 * Math.PI / 360 * (360 / this.num) * i) * r,
-          y: this.peak.y - Math.cos(2 * Math.PI / 360 * (360 / this.num) * i) * r
+    // 线条圆齿
+    function Gear(option = {}) {
+      this.size = option.size || 100;
+      this.num = option.num || 15;
+      this.color = option.color || CLR_0;
+      this.peak = {
+        x: 400,
+        y: 70,
+      };
+      this.draw = (ctx) => {
+        let R = this.size;
+        let r = this.size / 5;
+        for (let i = 0; i < this.num; i++) {
+          let dotr = {
+            x:
+              this.peak.x +
+              Math.sin(((2 * Math.PI) / 360) * (360 / this.num) * i) * r,
+            y:
+              this.peak.y -
+              Math.cos(((2 * Math.PI) / 360) * (360 / this.num) * i) * r,
+          };
+          let dotR = {
+            x:
+              this.peak.x +
+              Math.sin(((2 * Math.PI) / 360) * (360 / this.num) * i) * R,
+            y:
+              this.peak.y -
+              Math.cos(((2 * Math.PI) / 360) * (360 / this.num) * i) * R,
+          };
+          ctx.beginPath();
+          ctx.moveTo(dotr.x, dotr.y);
+          ctx.lineTo(dotR.x, dotR.y);
+          ctx.strokeStyle = this.color;
+          ctx.stroke();
         }
-        let dotR = {
-          x: this.peak.x + Math.sin(2 * Math.PI / 360 * (360 / this.num) * i) * R,
-          y: this.peak.y - Math.cos(2 * Math.PI / 360 * (360 / this.num) * i) * R
-        }
-        ctx.beginPath()
-        ctx.moveTo(dotr.x, dotr.y)
-        ctx.lineTo(dotR.x, dotR.y)
-        ctx.strokeStyle = this.color
-        ctx.stroke()
-      }
+      };
     }
-  }
-  // 正方形，或圆角方形 size: 长度， cir 是否圆角，radius 圆角大小
-  function Square(option = {}){
-    this.size = option.size || 100
-    this.cir = option.cir || false
-    this.peak = option.peak || { x: 200, y: 200 }
-    this.radius = option.radius || this.size / 3
-    this.color = option.color || CLR_0
-    this.rotate = option.rotate || false
-    this.deg = option.deg || 45
-    this.unCir = (ctx) => {
-      let len = this.size
-      let sx = this.peak.x - this.size / 2
-      let sy = this.peak.y - this.size / 2
-      ctx.beginPath()
-      ctx.moveTo(sx, sy)
-      ctx.lineTo(sx + len, sy)
-      ctx.lineTo(sx + len, sy + len)
-      ctx.lineTo(sx, sy + len)
-      ctx.lineTo(sx, sy)
-      ctx.strokeStyle = this.color
-      ctx.stroke()
-      ctx.closePath()
-    }
-    this.unCirRtt = (ctx) => {
-      let r = (this.size / 2) / (Math.sin(this.deg * (Math.PI / 180)))
-      let cx = this.peak.x
-      let cy = this.peak.y
-      ctx.beginPath()
-      ctx.moveTo(cx, cy - r)
-      ctx.lineTo(cx + r, cy)
-      ctx.lineTo(cx , cy + r)
-      ctx.lineTo(cx - r, cy)
-      ctx.lineTo(cx, cy - r)
-      ctx.strokeStyle = this.color
-      ctx.stroke()
-      ctx.closePath()
-    }
-    this.isCir = (ctx) => {
-      let len = this.size
-      let sx = this.peak.x - this.size / 2
-      let sy = this.peak.y - this.size / 2
-      ctx.beginPath()
-      ctx.moveTo(sx, sy + this.radius)
-      ctx.quadraticCurveTo(sx, sy, sx + this.radius, sy)
-      ctx.lineTo(sx + len - this.radius, sy)
-      ctx.quadraticCurveTo(sx + len, sy, sx + len, sy + this.radius)
-      ctx.lineTo(sx + len, sy + len - this.radius)
-      ctx.quadraticCurveTo(sx + len, sy + len, sx + len - this.radius, sy + len)
-      ctx.lineTo(sx + this.radius, sy + len)
-      ctx.quadraticCurveTo(sx, sy + len, sx, sy + len - this.radius)
-      ctx.lineTo(sx, sy + this.radius)
-      ctx.strokeStyle = this.color
-      ctx.stroke()
-      ctx.closePath()
-    }
-    this.draw = (ctx) => {
-      ctx.lineWidth = 1.5
-      // this.cir ? this.isCir(ctx) : (this.rotate ? this.unCirRtt(ctx) : this.unCir(ctx))
-      // this.unCir(ctx)
-      // this.unCirRtt(ctx)
-      this.isCir(ctx)
-      // this.isCirRtt(ctx)
-      ctx.lineWidth = 1
-    }
-    this.isCirRtt = (ctx) => {
-      let half = this.size / 2
-      let r = half / (Math.sin(this.deg * (Math.PI / 180)))
-      let dif = r - half
-      let cx = this.peak.x
-      let cy = this.peak.y
-      ctx.beginPath()
-      ctx.moveTo()
-      ctx.quadraticCurveTo()
-      ctx.lineTo()
+    // 正方形，或圆角方形 size: 长度， cir 是否圆角，radius 圆角大小
+    function Square(option = {}) {
+      this.size = option.size || 100;
+      this.cir = option.cir || false;
+      this.peak = option.peak || { x: 200, y: 200 };
+      this.radius = option.radius || this.size / 3;
+      this.color = option.color || CLR_0;
+      this.rotate = option.rotate || false;
+      this.deg = option.deg || 45;
+      this.unCir = (ctx) => {
+        let len = this.size;
+        let sx = this.peak.x - this.size / 2;
+        let sy = this.peak.y - this.size / 2;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + len, sy);
+        ctx.lineTo(sx + len, sy + len);
+        ctx.lineTo(sx, sy + len);
+        ctx.lineTo(sx, sy);
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.closePath();
+      };
+      this.unCirRtt = (ctx) => {
+        let r = this.size / 2 / Math.sin(this.deg * (Math.PI / 180));
+        let cx = this.peak.x;
+        let cy = this.peak.y;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r);
+        ctx.lineTo(cx + r, cy);
+        ctx.lineTo(cx, cy + r);
+        ctx.lineTo(cx - r, cy);
+        ctx.lineTo(cx, cy - r);
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.closePath();
+      };
+      this.isCir = (ctx) => {
+        let len = this.size;
+        let sx = this.peak.x - this.size / 2;
+        let sy = this.peak.y - this.size / 2;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy + this.radius);
+        ctx.quadraticCurveTo(sx, sy, sx + this.radius, sy);
+        ctx.lineTo(sx + len - this.radius, sy);
+        ctx.quadraticCurveTo(sx + len, sy, sx + len, sy + this.radius);
+        ctx.lineTo(sx + len, sy + len - this.radius);
+        ctx.quadraticCurveTo(
+          sx + len,
+          sy + len,
+          sx + len - this.radius,
+          sy + len
+        );
+        ctx.lineTo(sx + this.radius, sy + len);
+        ctx.quadraticCurveTo(sx, sy + len, sx, sy + len - this.radius);
+        ctx.lineTo(sx, sy + this.radius);
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.closePath();
+      };
+      this.draw = (ctx) => {
+        ctx.lineWidth = 1.5;
+        // this.cir ? this.isCir(ctx) : (this.rotate ? this.unCirRtt(ctx) : this.unCir(ctx))
+        // this.unCir(ctx)
+        // this.unCirRtt(ctx)
+        this.isCir(ctx);
+        // this.isCirRtt(ctx)
+        ctx.lineWidth = 1;
+      };
+      this.isCirRtt = (ctx) => {
+        let half = this.size / 2;
+        let r = half / Math.sin(this.deg * (Math.PI / 180));
+        let dif = r - half;
+        let cx = this.peak.x;
+        let cy = this.peak.y;
+        ctx.beginPath();
+        ctx.moveTo();
+        ctx.quadraticCurveTo();
+        ctx.lineTo();
 
-      ctx.quadraticCurveTo()
-      ctx.lineTo()
+        ctx.quadraticCurveTo();
+        ctx.lineTo();
 
-      ctx.quadraticCurveTo()
-      ctx.lineTo()
+        ctx.quadraticCurveTo();
+        ctx.lineTo();
 
-      ctx.quadraticCurveTo()
-      ctx.lineTo()
+        ctx.quadraticCurveTo();
+        ctx.lineTo();
 
-      ctx.strokeStyle = this.color
-      ctx.stroke()
-      ctx.closePath()
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+        ctx.closePath();
+      };
     }
-  }
-  
-  // 临时画圆的方法
-  function arc(clr) {
-    let c = document.createElement('canvas')
-    let ctx = c.getContext('2d')
-    c.width = 6
-    c.height = 6
-    ctx.arc(3,3,3,0,2*Math.PI)
-    ctx.strokeStyle = clr || '#fff'
-    ctx.fillStyle = clr
-    ctx.fill()
-    ctx.stroke()
-    return c
-  }
-</script>
 
+    // 临时画圆的方法
+    function arc(clr) {
+      let c = document.createElement("canvas");
+      let ctx = c.getContext("2d");
+      c.width = 6;
+      c.height = 6;
+      ctx.arc(3, 3, 3, 0, 2 * Math.PI);
+      ctx.strokeStyle = clr || "#fff";
+      ctx.fillStyle = clr;
+      ctx.fill();
+      ctx.stroke();
+      return c;
+    }
+  </script>
 </html>
