@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body,
+    html {
+      height: 100%;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    canvas {
+      position: absolute;
+      color: rgb(255, 255, 255);
+      background: #000;
+    }
+  </style>
+  <body></body>
+  <script>
+    window.$ = (e) => {
+      const els = document.querySelectorAll(e);
+      return els.length === 1 ? els[0] : els;
+    };
+    window.Rd = function (n, r) {
+      if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+        var a = r;
+        (r = n), (n = a);
+      }
+      return Math.floor(Math.random() * (r - n + 1)) + n;
+    };
+  </script>
+  <script>
+    // 定义一些常量
+    const WIDTH = document.documentElement.clientWidth;
+    const HEIGHT = document.documentElement.clientHeight;
+    const CANVAS = document.createElement("canvas");
+    let R = 1;
+    let ANM = null;
+    document.body.appendChild(CANVAS);
+    CANVAS.width = WIDTH;
+    CANVAS.height = HEIGHT;
+    const CTX = CANVAS.getContext("2d");
+    const { pow, PI, SQRT2, sin, abs, cos, tan, sqrt } = Math;
+    const Distance = function (x1, y1, x2, y2) {
+      var a = x2 - x1;
+      var b = y2 - y1;
+      return sqrt(a * a + b * b);
+    };
+    draw();
+    function draw() {
+      window.cancelAnimationFrame(ANM);
+      ANM = requestAnimationFrame(drawTree);
+    }
+  </script>
+</html>

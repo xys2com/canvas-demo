@@ -1,0 +1,229 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>夜色</title>
+
+    <link href="./moon.ico" rel="shortcut icon" type="image/x-icon" />
+    <style>
+      body,
+      html {
+        padding: 0;
+        margin: 0;
+      }
+
+      body {
+        background: linear-gradient(to bottom, #040426, #173185);
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      #canvas-moon {
+        background: linear-gradient(to bottom, #0e1b58, #040426);
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="canvas-stars" style="z-index: 0"></canvas>
+    <canvas id="canvas-moon" style="z-index: 3"></canvas>
+  </body>
+  <script type="text/javascript" src="./js/draw.js"></script>
+  <script>
+    function $x(s) {
+      var doms = document.querySelectorAll(s);
+      if (doms.length == 1) {
+        return doms[0];
+      } else {
+        return doms;
+      }
+    }
+    window.onresize = () => {
+      $x("#canvas-stars").width = document.body.offsetWidth;
+      $x("#canvas-moon").width = document.body.offsetWidth;
+    };
+    //生成随机整数
+    function random(min, max) {
+      if (arguments.length < 2) {
+        max = min;
+        min = 0;
+      }
+
+      if (min > max) {
+        var hold = max;
+        max = min;
+        min = hold;
+      }
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    var cvsStars = $x("#canvas-stars"),
+      cvsMoon = $x("#canvas-moon");
+
+    cvsStars.width = cvsMoon.width = document.body.offsetWidth;
+    cvsStars.height = document.body.offsetHeight;
+    cvsMoon.height = document.body.offsetHeight / 2;
+    var starsCtx = cvsStars.getContext("2d");
+    var moonCtx = cvsMoon.getContext("2d");
+    var moveStarsOptions = {
+      width: cvsStars.width,
+      height: cvsStars.height,
+    };
+    //初始化可移动的星星
+    var stars = [];
+    for (var i = 0; i < 800; i++) {
+      let star = new MoveStar(moveStarsOptions);
+      stars.push(star);
+    }
+    //初始化静态的星星
+    var staticStars = [];
+    for (var i = 0; i < 20; i++) {
+      let star = new StaticStar({
+        width: cvsMoon.width,
+        height: cvsMoon.height,
+      });
+      staticStars.push(star);
+    }
+    //初始化流星
+    var meteors = [];
+    for (var i = 0; i < 5; i++) {
+      let meteor = new Meteor();
+      meteors.push(meteor);
+    }
+    //页面失去焦点停止添加流星， 聚焦重新开始添加流星 防止卡顿
+    var isVisibilityState = true;
+    document.addEventListener("visibilitychange", function () {
+      // 页面变为不可见时触发
+      if (document.visibilityState == "hidden") {
+        isVisibilityState = false;
+      }
+      // 页面变为可见时触发
+      if (document.visibilityState == "visible") {
+        isVisibilityState = true;
+        loopMeteor();
+      }
+    });
+    //不定时添加  流星
+    function loopMeteor() {
+      let t = random(100, 400);
+      if (isVisibilityState) {
+        setTimeout(() => {
+          for (var i = 0; i < random(1, 2); i++) {
+            let meteor = new Meteor();
+            meteors.push(meteor);
+          }
+          loopMeteor();
+        }, t);
+      }
+    }
+    //绘制移动类型的星星 及流星
+    function drawMoveStars() {
+      starsCtx.globalCompositeOperation = "source-over";
+      starsCtx.clearRect(0, 0, cvsStars.width, cvsStars.height);
+      starsCtx.globalCompositeOperation = "lighter";
+      for (let i in stars) {
+        stars[i].draw(starsCtx);
+      }
+      //同时绘制 流星
+      for (let i in meteors) {
+        if (meteors[i].x < -500 || meteors[i].y > 1500) {
+          meteors.splice(i, 1);
+        } else {
+          meteors[i].draw(starsCtx);
+        }
+      }
+      window.requestAnimationFrame(drawMoveStars);
+    }
+    //绘制静态的星星
+    function drawStaticStars() {
+      moonCtx.globalCompositeOperation = "source-over";
+      moonCtx.globalCompositeOperation = "lighter";
+      for (let i in staticStars) {
+        staticStars[i].draw(moonCtx);
+      }
+    }
+    //水中月
+    function shadow() {
+      //月亮光晕
+      var aperture = moonCtx.createRadialGradient(
+        cvsStars.width / 2,
+        (cvsStars.height / 5) * 3,
+        0,
+        cvsStars.width / 2,
+        cvsStars.height / 2,
+        cvsStars.height
+      );
+      aperture.addColorStop(0.0025, "#fff");
+      aperture.addColorStop(0.1, "rgba(255,255,255,.5)");
+      aperture.addColorStop(0.2, "rgba(255,255,255,.4)");
+      aperture.addColorStop(0.3, "rgba(255,255,255,.3)");
+      aperture.addColorStop(0.4, "rgba(255,255,255,.2)");
+      aperture.addColorStop(0.6, "rgba(255,255,255,.1)");
+      aperture.addColorStop(1, "transparent");
+      moonCtx.globalAlpha = 0.5;
+      moonCtx.arc(
+        cvsStars.width / 2,
+        (cvsStars.height / 5) * 3,
+        cvsStars.height,
+        0,
+        2 * Math.PI
+      );
+      moonCtx.fillStyle = aperture;
+      moonCtx.fill();
+
+      //将月亮及光晕
+      var base64Url = getBase64Url(cvsMoon);
+      var newImg = new Image();
+      newImg.src = base64Url;
+      newImg.style.height = cvsMoon.height;
+      newImg.style.width = "100%";
+      newImg.style.position = "absolute";
+      newImg.style.top = (cvsMoon.height / 4) * 6;
+      newImg.style.background =
+        "linear-gradient(to bottom,#080339,#050d2b,#040416)";
+      newImg.id = "moon-shadow";
+      document.body.appendChild(newImg);
+      cvsMoon.style.top = cvsMoon.height;
+      //绘制水域部分
+
+      moonCtx.clearRect(0, 0, cvsMoon.width, cvsMoon.height);
+      var backgroundGradient = moonCtx.createLinearGradient(
+        0,
+        0,
+        0,
+        cvsMoon.height
+      );
+      backgroundGradient.addColorStop(0, "rgba(0,0,0,.4)");
+      backgroundGradient.addColorStop(0.2, "rgb(13,25,84)");
+      backgroundGradient.addColorStop(1, "rgb(4,4,38)");
+      moonCtx.fillStyle = backgroundGradient;
+      moonCtx.fillRect(0, 0, cvsMoon.width, cvsMoon.height);
+
+      // $('#moon-shadow').
+      undulate(
+        {
+          speed: 0.8,
+          scale: 1,
+          height: 1 / 2, //从图片的哪个高度开始计算
+        },
+        newImg
+      );
+      document.body.removeChild(newImg);
+      // $('#moon-shadow').remove()
+    }
+
+    window.onload = function () {
+      loopMeteor(); //不定时添加  流星
+      drawMoveStars(); //绘制移动星星 及流星
+      drawStaticStars(); //绘制静态的星星
+
+      drawMoonShadow({
+        //绘制月亮及倒影
+        canvas: cvsMoon,
+        callback: shadow,
+      });
+    };
+  </script>
+</html>

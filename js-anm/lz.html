@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body,
+    html {
+      height: 100%;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    canvas {
+      position: absolute;
+      color: rgb(255, 255, 255);
+      background: #000;
+    }
+  </style>
+  <body></body>
+  <script>
+    window.$ = (e) => {
+      const els = document.querySelectorAll(e);
+      return els.length === 1 ? els[0] : els;
+    };
+    window.Rd = function (n, r) {
+      if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+        var a = r;
+        (r = n), (n = a);
+      }
+      return Math.floor(Math.random() * (r - n + 1)) + n;
+    };
+  </script>
+  <script>
+    const W = document.documentElement.clientWidth;
+    const H = document.documentElement.clientHeight;
+    const CANVAS = document.createElement("canvas");
+    document.body.appendChild(CANVAS);
+    CANVAS.width = W;
+    CANVAS.height = H;
+    const Ctx = CANVAS.getContext("2d");
+    const Size = W < H ? W - 20 : H - 20; // 舞台大小
+    const Num = 5; // 舞台中每列/行的方块的个数
+    const InitNum = 4; // 初始的方块个数
+    const Gap = 5; // 间距
+    const LineWidth = 3; // 线宽
+    let End = false;
+    let Req = null;
+
+    // 给每个格子之间留下{Gap}px的间距
+    const iSize = (Size - LineWidth * 2 - (Num + 1) * 2 * Gap) / Num;
+
+    const { pow, PI, SQRT2, sin, abs, cos, tan, sqrt, random } = Math;
+    // Matrix 二维数组 null 为空，Grid，为方格实例，* 为占位符，表示已经有其他对象会移动到那个位置（主要用于动画计算使用）
+    let Matrix = [];
+    // 需要进行动画的对象
+    let AnmMat = [];
+    // 动画是否完成
+    let Anming = false;
+    let stage,
+      Grids = [];
+    let KeyCode = 0;
+
+    // 边框舞台
+    function Stage(options = null) {
+      let borderWidth, borderColor;
+      if (options !== null) {
+        borderWidth = options.borderWidth || 3;
+        borderColor = options.borderColor || "#eec87e";
+      }
+      this.sx = (W - Size) / 2;
+      this.sy = (H - Size) / 2;
+      this.borderWidth = borderWidth || 3;
+      this.borderColor = borderColor || "#eec87e";
+      this.init = () => {
+        Ctx.beginPath();
+        Ctx.lineWidth = this.borderWidth;
+        Ctx.moveTo(this.sx, this.sy);
+        Ctx.lineTo(this.sx + Size, this.sy);
+        Ctx.lineTo(this.sx + Size, this.sy + Size);
+        Ctx.lineTo(this.sx, this.sy + Size);
+        Ctx.lineTo(this.sx, this.sy);
+        Ctx.strokeStyle = this.borderColor;
+        Ctx.stroke();
+      };
+      this.clear = () => {
+        Ctx.clearRect(this.sx + 1.5, this.sy + 1.5, Size - 3, Size - 3);
+      };
+    }
+    // 游戏初始化
+    let GameInit = () => {
+      stage = new Stage();
+      stage.init();
+      MatrixInit();
+      // 初始化生成两个小方块
+      // for (let i = 0; i < InitNum; i++) {
+      //   let item = new Grid();
+      //   if (Grids.length === 0) {
+      //     item.init();
+      //     Grids.push(item);
+      //   } else {
+      //     item = detection(item);
+      //     if (item) {
+      //       item.init();
+      //       Grids.push(item);
+      //     } else {
+      //       GameEnd();
+      //       break;
+      //     }
+      //   }
+      // }
+      let a = new Grid(0, 0, 1),
+        b = new Grid(1, 0, 2),
+        c = new Grid(1, 1, 3),
+        d = new Grid(2, 1, 4);
+      a.init();
+      b.init();
+      c.init();
+      d.init();
+      Grids.push(a);
+      Grids.push(b);
+      Grids.push(c);
+      Grids.push(d);
+      getArray();
+      document.onkeydown = (e) => {
+        var keyCode = window.event ? e.keyCode : e.which;
+        if (keyCode <= 40 && keyCode >= 37) {
+          if (Anming) {
+            return;
+          }
+          allMove(keyCode);
+        }
+      };
+    };
+
+    // 矩阵初始化
+    function MatrixInit() {
+      for (let i = 0; i < Num; i++) {
+        const arr = [];
+        for (let j = 0; j < Num; j++) {
+          arr.push(null);
+        }
+        Matrix.push(arr);
+      }
+    }
+
+    // 返回有方块的点位 [[0~4, 0~4]]
+    function getArray() {
+      let arr = [];
+      Matrix.forEach((e, i) => [
+        e.forEach((k, j) => {
+          if (k !== null) {
+            arr.push([i, j]);
+          }
+        }),
+      ]);
+      return arr;
+    }
+
+    // 位置检测
+    function detection(item) {
+      let ckItem = item;
+      const len = Grids.length;
+      // 若没有位置则游戏结束
+      if (Grids.length >= pow(Num, 2)) {
+        End = true;
+        return false;
+      }
+      // 若该位置已经已经存在方块，则再次重新随机一个小方格
+      for (let i = 0; i < len; i++) {
+        let el = Grids[i];
+        if (ckItem.x === el.x && ckItem.y === el.y) {
+          let nItem = new Grid();
+          ckItem = detection(nItem);
+        }
+        // if (ckItem.x !== el.x && ckItem.y !== el.y && i === len - 1) {
+        //   return ckItem;
+        // } else {
+        //   continue;
+        // }
+      }
+      return ckItem;
+    }
+    // 游戏结束
+    function GameEnd() {}
+
+    // 小方格
+    function Grid(x = null, y = null, type = 1) {
+      //
+      this.type = type | 1;
+      this.color = "rgb(0, 255, 255)";
+      // 在(nxn)舞台中的坐标(0~n)
+      this.x = x === null ? Rd(0, Num - 1) : x;
+      this.y = y === null ? Rd(0, Num - 1) : y;
+      // 在玩家使用方向键后得到的目的坐标
+      this.nx = null;
+      this.ny = null;
+      //
+      this.txt = "2";
+      // 是否开始位移
+      this.mvOp = false;
+      // 随机id
+      this.id = random().toString(32).slice(-8);
+      // 方块在canvas中 xy 坐标
+      this.coord = {
+        x: 0,
+        y: 0,
+      };
+      this.color = [];
+      this.draw = (init = false) => {
+        this.color = GetItemColor(this.type).split(",");
+        const Left = (W - Size) / 2 + LineWidth + (this.x + 1) * (Gap * 2);
+        const Top = (H - Size) / 2 + LineWidth + (this.y + 1) * (Gap * 2);
+        this.coord = {
+          x: this.x * iSize + Left,
+          y: this.y * iSize + Top,
+        };
+        Ctx.beginPath();
+        Ctx.lineWidth = LineWidth;
+        Ctx.moveTo(this.coord.x, this.coord.y);
+        Ctx.lineTo(this.coord.x + iSize, this.coord.y);
+        Ctx.lineTo(this.coord.x + iSize, this.coord.y + iSize);
+        Ctx.lineTo(this.coord.x, this.coord.y + iSize);
+        Ctx.lineTo(this.coord.x, this.coord.y);
+        Ctx.strokeStyle = `rgb(${this.color[0]}, ${this.color[1]}, ${this.color[2]})`;
+        Ctx.stroke();
+        this.setTxt();
+        Matrix[this.y][this.x] = this;
+      };
+      this.init = () => {
+        this.draw(true);
+      };
+      this.moveTo = () => {
+        Matrix[this.y][this.x] = null;
+        this.color = GetItemColor(this.type).split(",");
+        const Left = (W - Size) / 2 + LineWidth + (this.nx + 1) * (Gap * 2);
+        const Top = (H - Size) / 2 + LineWidth + (this.ny + 1) * (Gap * 2);
+        this.coord = {
+          x: this.nx * iSize + Left,
+          y: this.ny * iSize + Top,
+        };
+        Ctx.beginPath();
+        Ctx.lineWidth = LineWidth;
+        Ctx.moveTo(this.coord.x, this.coord.y);
+        Ctx.lineTo(this.coord.x + iSize, this.coord.y);
+        Ctx.lineTo(this.coord.x + iSize, this.coord.y + iSize);
+        Ctx.lineTo(this.coord.x, this.coord.y + iSize);
+        Ctx.lineTo(this.coord.x, this.coord.y);
+        Ctx.strokeStyle = `rgb(${this.color[0]}, ${this.color[1]}, ${this.color[2]})`;
+        Ctx.stroke();
+        this.setTxt();
+        Matrix[this.ny][this.nx] = this;
+        // 动画方块行为时，在动画完成后将 x,nx,y,ny 重新赋值
+        this.x = this.nx;
+        this.y = this.ny;
+        this.nx = null;
+        this.ny = null;
+      };
+      this.setTxt = () => {
+        let cx = this.coord.x + iSize / 2;
+        let cy = this.coord.y + iSize / 2;
+        Ctx.font = `${(30 * Num) / 5}px bold 黑体`;
+        Ctx.fillStyle = `rgb(${this.color[0]}, ${this.color[1]}, ${this.color[2]})`;
+        Ctx.textAlign = "center";
+        Ctx.textBaseline = "middle";
+        Ctx.fillText(pow(2, this.type), cx, cy);
+      };
+      this.computeNext = (type) => {
+        if (type === 37) {
+          // 左方向键
+          for (let i = 0; i < Matrix[this.y].length; i++) {
+            const item = Matrix[this.y][i];
+            if (item === null) {
+              this.nx = i;
+              this.ny = this.y;
+              Matrix[this.ny][this.nx] = "*"; // 占位
+              AnmMat.push(this);
+              this.mvOp = true;
+              // this.moveTo(); // 开始移动
+              break;
+            } else if (item.id !== this.id && item !== null) {
+              continue;
+            } else if (item.id === this.id) {
+              this.draw();
+              break;
+            }
+          }
+        }
+        if (type === 38) {
+          // 上方向键
+          for (let i = 0; i < Matrix[this.x].length; i++) {
+            const item = Matrix[i][this.x];
+            if (item === null) {
+              this.nx = this.x;
+              this.ny = i;
+              Matrix[this.ny][this.nx] = "*"; // 占位
+              AnmMat.push(this);
+              this.mvOp = true;
+              // this.moveTo(); // 开始移动
+              break;
+            } else if (item.id !== this.id && item !== null) {
+              continue;
+            } else if (item.id === this.id) {
+              this.draw();
+              break;
+            }
+          }
+        }
+        if (type === 39) {
+          // 右方向键
+          let index = Matrix[this.y].findIndex((e) => {
+            if (e) {
+              return this.id === e.id;
+            }
+          });
+          console.log(index);
+          let count = 0;
+          Matrix[this.y].map((e, i) => {
+            if (e !== null && i > index) {
+              count++;
+            }
+          });
+          console.log(count);
+          for (let i = Matrix[this.y].length - count - 1; i >= index; i--) {
+            const item = Matrix[this.y][i];
+            if (item === null) {
+              this.nx = i;
+              this.ny = this.y;
+              Matrix[this.ny][this.nx] = "*"; // 占位
+              AnmMat.push(this);
+              this.mvOp = true;
+              // this.moveTo();
+              break;
+            } else if (item.id !== this.id && item !== null) {
+              continue;
+            } else if (item.id === this.id) {
+              this.draw();
+              break;
+            }
+          }
+        }
+        if (type === 40) {
+          // 上方向键
+          for (let i = Matrix[this.x].length - 1; i >= 0; i--) {
+            const item = Matrix[i][this.x];
+            if (item === null) {
+              this.nx = this.x;
+              this.ny = i;
+              Matrix[this.ny][this.nx] = "*"; // 占位
+              AnmMat.push(this);
+              this.mvOp = true;
+              // this.moveTo();
+              break;
+            } else if (item.id !== this.id && item !== null) {
+              continue;
+            } else if (item.id === this.id) {
+              this.draw();
+              break;
+            }
+          }
+        }
+      };
+      this.move = () => {
+        this.color = GetItemColor(this.type).split(",");
+        const FreeSpaceX = (W - Size) / 2 + LineWidth;
+        const FreeSpaceY = (H - Size) / 2 + LineWidth;
+
+        const StartX = this.x * iSize + (FreeSpaceX + (this.x + 1) * (Gap * 2));
+        const StartY = this.y * iSize + (FreeSpaceY + (this.y + 1) * (Gap * 2));
+        const EndX = this.nx * iSize + (FreeSpaceX + (this.nx + 1) * (Gap * 2));
+        const EndY = this.ny * iSize + (FreeSpaceY + (this.ny + 1) * (Gap * 2));
+        let moveDicX = (EndX - StartX) / 30;
+        let moveDicY = (EndY - StartY) / 30;
+        this.coord = {
+          x: this.coord.x + moveDicX,
+          y: this.coord.y + moveDicY,
+        };
+        // 动画方块行为时，在动画完成后将 x,nx,y,ny 重新赋值
+        let totalX = abs(this.coord.x - StartX);
+        let totalY = abs(this.coord.y - StartY);
+        if (
+          (totalX >= abs(EndX - StartX - moveDicX) && StartY === EndY) ||
+          (totalY >= abs(EndY - StartY - moveDicY) && StartX === EndX)
+        ) {
+          Matrix[this.y][this.x] = null;
+          Matrix[this.ny][this.nx] = this;
+          this.x = this.nx;
+          this.y = this.ny;
+          this.nx = null;
+          this.ny = null;
+          this.coord = {
+            x: EndX,
+            y: EndY,
+          };
+          this.mvOp = false;
+        }
+
+        Ctx.beginPath();
+        Ctx.lineWidth = LineWidth;
+        Ctx.moveTo(this.coord.x, this.coord.y);
+        Ctx.lineTo(this.coord.x + iSize, this.coord.y);
+        Ctx.lineTo(this.coord.x + iSize, this.coord.y + iSize);
+        Ctx.lineTo(this.coord.x, this.coord.y + iSize);
+        Ctx.lineTo(this.coord.x, this.coord.y);
+        Ctx.strokeStyle = `rgb(${this.color[0]}, ${this.color[1]}, ${this.color[2]})`;
+        Ctx.stroke();
+        this.setTxt();
+      };
+    }
+
+    function startAnm() {
+      let count = 0;
+      Grids.forEach((e) => {
+        if (!e.mvOp) {
+          count++;
+        }
+      });
+      if (count < Grids.length) {
+        stage.clear();
+      }
+      Grids.forEach((e) => {
+        if (e.mvOp) {
+          e.move();
+        }
+      });
+      if (count >= Grids.length) {
+        Anming = false;
+        window.cancelAnimationFrame(this.Req);
+        this.Req = null;
+      } else {
+        this.Req = window.requestAnimationFrame(startAnm);
+      }
+    }
+
+    // 整体移动
+    function allMove(keyCode) {
+      Matrix.forEach((e) => {
+        e.forEach((e2) => {
+          if (e2 !== null && e2 !== "*") {
+            e2.computeNext(keyCode);
+          }
+        });
+      });
+      Anming = true;
+      startAnm();
+    }
+
+    GameInit();
+
+    // 根据type 获得方格色彩
+    function GetItemColor(type) {
+      switch (type) {
+        case 1:
+          return "0,255,255";
+        case 2:
+          return "0,255,192";
+        case 3:
+          return "0,255,128";
+        case 4:
+          return "0,255,64";
+        case 5:
+          return "0,255,0";
+        case 6:
+          return "128,255,0";
+        case 7:
+          return "255,255,0";
+        case 8:
+          return "255,166,0";
+        case 9:
+          return "255,102,0";
+        case 10:
+          return "255,51,0";
+        case 11:
+          return "255,0,0";
+        case 12:
+          return "255,0,64";
+        default:
+          break;
+      }
+    }
+  </script>
+</html>

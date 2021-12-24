@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div
+      id="ball"
+      style="position: absolute; background: #000; width: 50px; height: 50px"
+    ></div>
+    输入小球移动后的位置：<input id="pos" />
+    <button id="moveBtn">开始移动</button>
+    <button id="cancelBtn">cancel</button>
+    <button id="replay">replay</button>
+  </body>
+  <script>
+    let anmSequence = []; // 动画序列
+    let endSequence = []; // 已经执行的序列  用于回放
+    let Itv = null;
+    let replayKey = false; // 回放中不允许键入值
+    let startStyle = "";
+    let count = 0;
+
+    // var pos = document.getElementById("pos");
+    // var moveBtn = document.getElementById("moveBtn");
+    // var cancelBtn = document.getElementById("cancelBtn");
+
+    // 缓动
+    var tween = {
+      linear: function (t, b, c, d) {
+        return (c * t) / d + b;
+      },
+      easeIn: function (t, b, c, d) {
+        return c * (t /= d) * t + b;
+      },
+      strongEaseIn: function (t, b, c, d) {
+        return c * (t /= d) * t * t * t * t + b;
+      },
+      strongEaseOut: function (t, b, c, d) {
+        return c * ((t = t / d - 1) * t * t * t * t + 1) + b;
+      },
+      sineaseIn: function (t, b, c, d) {
+        return c * (t /= d) * t * t + b;
+      },
+      sineaseOut: function (t, b, c, d) {
+        return c * ((t = t / d - 1) * t * t + 1) + b;
+      },
+    };
+    // 执行动画序列 或者回放序列
+    function executeAnm(isReplay = false) {
+      list = isReplay ? endSequence : anmSequence;
+      const obj = getObjOnAnm(list);
+      if (obj !== "end") {
+        !obj.initKey ? obj.init() : void 0; // 在需要的时候初始化
+        Itv = setTimeout(() => {
+          obj.execute(() => {
+            if (!obj.receiver.step()) {
+              // 如果动画完成 设定对象endAnm 为true
+              obj.endAnm = true;
+            }
+          }); // 更新小球位置
+          executeAnm(isReplay); //
+        }, 19);
+      } else {
+        window.clearTimeout(Itv);
+      }
+    }
+    // 返回未执行动画的第一个节点
+    function getObjOnAnm(arr) {
+      for (let i = 0; i < arr.length; i++) {
+        if (!arr[i].endAnm) {
+          return arr[i];
+        } else if (arr[i].endAnm && i === arr.length - 1) {
+          endSequence = arr.map((e) => {
+            const obj = new MoveCommand(e.post, e.distance, e.timer, e.mode);
+            return obj;
+          });
+          return "end";
+        }
+      }
+    }
+
+    // 动画类
+    function Animate(dom) {
+      this.dom = dom; // 进行运动的 dom 节点
+      this.startTime = 0; // 动画开始时间
+      this.startPos = 0; // 动画开始时，dom 节点的位置，即 dom 的初始位置
+      this.endPos = 0; // 动画结束时，dom 节点的位置，即 dom 的目标位置
+      this.propertyName = null; // dom 节点需要被改变的 css 属性名
+      this.easing = null; // 缓动算法
+      this.duration = null; // 动画持续时间
+      this.start = (propertyName, endPos, duration, easing) => {
+        this.startTime = +new Date(); // 动画启动时间
+        this.startPos = this.dom.getBoundingClientRect()[propertyName]; // dom 节点初始位置
+        this.propertyName = propertyName; // dom 节点需要被改变的 CSS 属性名
+        this.endPos = this.startPos + endPos; // dom 节点目标位置
+        this.duration = duration; // 动画持续事件
+        this.easing = tween[easing]; // 缓动算法
+      };
+      this.step = () => {
+        var t = +new Date(); // 取得当前时间
+        if (t >= this.startTime + this.duration) {
+          this.update(this.endPos); // 更新小球的 CSS 属性值
+          return false;
+        }
+        var pos = this.easing(
+          t - this.startTime,
+          this.startPos,
+          this.endPos - this.startPos,
+          this.duration
+        );
+        // pos 为小球当前位置
+        this.update(pos); // 更新小球的 CSS 属性值
+        return true;
+      };
+      this.update = (pos) => {
+        this.dom.style[this.propertyName] = pos + "px";
+      };
+    }
+
+    // MoveCommand
+    /**
+     * post 移动方向
+     * distance 移动距离
+     * timer 动画时长
+     * mode 动画方式
+     */
+    function MoveCommand(post, distance, timer, mode) {
+      this.post = post;
+      // this.receiver = new Animate();
+      this.distance = distance;
+      this.oldPos = null;
+      this.timer = timer;
+      this.mode = mode;
+      this.endAnm = false;
+      this.initKey = false;
+      this.mode = mode;
+
+      this.init = () => {
+        const dom = document.getElementById("ball");
+        this.receiver = new Animate(dom);
+        this.receiver.start(this.post, this.distance, this.timer, this.mode);
+        this.initKey = true;
+      };
+      this.execute = (callback) => {
+        callback();
+      };
+    }
+    var Ryu = {
+      attack: function () {
+        console.log("攻击");
+        moveCommand = new MoveCommand("left", 100, 1000, "strongEaseOut");
+        return moveCommand;
+      },
+      defense: function () {
+        console.log("防御");
+        moveCommand = new MoveCommand("left", -100, 1000, "strongEaseOut");
+        return moveCommand;
+      },
+      jump: function () {
+        console.log("跳跃");
+        moveCommand = new MoveCommand("top", -100, 1000, "strongEaseOut");
+        return moveCommand;
+      },
+      crouch: function () {
+        console.log("蹲下");
+        moveCommand = new MoveCommand("top", 100, 1000, "strongEaseOut");
+        return moveCommand;
+      },
+    };
+    var commands = {
+      119: "jump", // W
+      115: "crouch", // S
+      97: "defense", // A
+      100: "attack", // D
+    };
+    document.onkeypress = (e) => {
+      if (replayKey) {
+        return;
+      } else {
+        if (startStyle === "") {
+          startStyle = new Object();
+          const dom = document.getElementById("ball");
+          startStyle = dom.style.cssText;
+        }
+        var keyCode = e.keyCode,
+          command = Ryu[commands[keyCode]]();
+        const undone = anmSequence.filter((e) => {
+          return !e.endAnm;
+        });
+        if (undone.length === 0) {
+          anmSequence.push(command);
+          executeAnm();
+        } else {
+          anmSequence.push(command);
+        }
+      }
+    };
+
+    document.getElementById("replay").onclick = function () {
+      if (endSequence.length === 0) {
+        return;
+      }
+      const dom = document.getElementById("ball");
+      dom.style.cssText = startStyle;
+      executeAnm(true);
+    };
+  </script>
+</html>

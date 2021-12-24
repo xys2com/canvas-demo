@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      height: 100%;
+    }
+    canvas {
+      background: #000;
+    }
+  </style>
+  <body>
+    <div>
+      <canvas id="cvs1" width="400" height="400"></canvas>
+      <canvas id="cvs1_2" width="400" height="400"></canvas>
+      <input id="btn_mod_2" type="button" value="生成" />
+      <br />
+      p1: <input id="p1x" type="text" placeholder="x" />
+      <input id="p1y" type="text" placeholder="y" />
+      <br />
+      p2: <input id="p2x" type="text" placeholder="x" />
+      <input id="p2y" type="text" placeholder="y" />
+      <br />
+      <input id="btn" type="button" value="生成" />
+      <input id="btn_add" type="button" value="加入" />
+    </div>
+    <div>
+      <canvas id="cvs2" width="300" height="300"></canvas>
+      <input id="btn2" type="button" value="生成" />
+      <input id="btn2_link" type="button" value="连线" />
+      <input id="btn2_3d" type="button" value="立体感" />
+    </div>
+    <div>
+      <canvas id="cvs3" width="300" height="300"></canvas>
+      <input id="btn3" type="button" value="生成" />
+    </div>
+  </body>
+  <script>
+    const $ = (s) => {
+      let doms = document.querySelectorAll(s);
+      return doms.length === 1 ? doms[0] : doms;
+    };
+  </script>
+  <script src="./bigdata/anm.js"></script>
+  <script>
+    let ctx = $("#cvs1").getContext("2d");
+    let ctx_2 = $("#cvs1_2").getContext("2d");
+    let ctx2 = $("#cvs2").getContext("2d");
+    let ctx3 = $("#cvs3").getContext("2d");
+    let p1x = $("#p1x"),
+      p1y = $("#p1y"),
+      p2x = $("#p2x"),
+      p2y = $("#p2y");
+    let lines = [];
+    let lines2 = [];
+    let rings = [];
+    let dots = [];
+    // 点到点
+    $("#btn_add").onclick = function () {
+      let p1 = { x: parseInt(p1x.value), y: parseInt(p1y.value) },
+        p2 = { x: parseInt(p2x.value), y: parseInt(p2y.value) };
+      let b = new Bezier(p1, p2);
+      lines.push(b);
+      let count = 0;
+      let itv = setInterval(() => {
+        let ring = new Ring();
+        ring.init(p2.x, p2.y);
+        rings.push(ring);
+        if (count > 2) {
+          window.clearInterval(itv);
+        }
+        count++;
+      }, 900 + count * randomFn(50, 80));
+    };
+    $("#btn").onclick = function () {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      let data = [
+        {
+          p1: { x: 100, y: 300 },
+          p2: { x: 300, y: 250 },
+        },
+        {
+          p1: { x: 0, y: 100 },
+          p2: { x: 350, y: 160 },
+        },
+        {
+          p1: { x: 200, y: 200 },
+          p2: { x: 350, y: 300 },
+        },
+      ];
+      data.forEach((e, i) => {
+        let b = new Bezier(e.p1, e.p2);
+        lines.push(b);
+        let count = 3;
+        let itv = setInterval(() => {
+          count--;
+          let ring = new Ring();
+          ring.init(e.p2.x, e.p2.y);
+          rings.push(ring);
+          if (count === 0) {
+            window.clearInterval(itv);
+          }
+        }, 900 + i * randomFn(50, 80));
+      });
+    };
+
+    // 点对点模式2
+    $("#btn_mod_2").onclick = function () {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      let data = [
+        {
+          p1: { x: 100, y: 300 },
+          p2: { x: 300, y: 250 },
+        },
+        {
+          p1: { x: 0, y: 100 },
+          p2: { x: 350, y: 160 },
+        },
+        {
+          p1: { x: 200, y: 200 },
+          p2: { x: 350, y: 300 },
+        },
+      ];
+      data.forEach((e, i) => {
+        let b = new Bezier2(e.p1, e.p2);
+        lines2.push(b);
+      });
+    };
+
+    // 移动小球
+    let dotdatas = ["#d18f52", "#c162de", "#42b3c2", "#98c379", "#61afef"];
+    let links = false;
+    let d3 = true;
+    $("#btn2").onclick = function () {
+      dotfn();
+    };
+    function dotfn() {
+      dots = [];
+      dotdatas.forEach((e) => {
+        let md = new Movedot(300, 300, e, d3);
+        dots.push(md);
+      });
+    }
+    $("#btn2_3d").onclick = function () {
+      d3 = !d3;
+      dots.forEach((e) => {
+        e.dotRefresh(d3);
+      });
+    };
+    $("#btn2_link").onclick = function () {
+      links = !links;
+    };
+
+    // 旋转圆弧
+    let ra;
+    $("#btn3").onclick = function () {
+      ra = new RotateArc();
+      ra.init();
+    };
+
+    main();
+    function clear() {
+      this.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    function main() {
+      clear.call(ctx);
+      clear.call(ctx_2);
+      clear.call(ctx2);
+      clear.call(ctx3);
+      // ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      // ctx_2.clearRect(0, 0, ctx_2.canvas.width, ctx_2.canvas.height);
+      // ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+      // ctx3.clearRect(0, 0, ctx3.canvas.width, ctx3.canvas.height);
+      Tool.ring({ x: 150, y: 150 }, 150, ctx2);
+      // b.draw(ctx);
+      rings.forEach((e) => {
+        e.draw(ctx);
+      });
+      lines.forEach((e) => {
+        e.draw(ctx);
+      });
+      lines2.forEach((e, i) => {
+        e.draw(ctx_2, i);
+      });
+
+      dots.forEach((e) => {
+        e.draw(ctx2);
+      });
+      if (links) link(dots, ctx2, "#c162de");
+
+      ra && ra.draw(ctx3);
+
+      requestAnimationFrame(main);
+    }
+  </script>
+</html>

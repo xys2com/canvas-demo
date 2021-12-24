@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+    }
+
+    .demo-cube {
+      margin: auto;
+    }
+
+    .perspective {
+      transform-style: preserve-3d;
+      perspective: 200px;
+      transform: rotateX(10deg);
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+
+    .demo-cube {
+      position: relative;
+      width: 100%;
+      height: 200px;
+    }
+    .cube-inner {
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin: -25px 0 0 -25px;
+      transform-style: preserve-3d;
+      transform-origin: 25px 25px;
+      transform: rotateX(-33.5deg) rotateY(45deg);
+      animation: spin1 6s ease-in-out infinite 2s;
+    }
+    .cube-inner li {
+      position: absolute;
+      display: block;
+      width: 50px;
+      height: 50px;
+      background: #175d96;
+      border: 1px solid #fff;
+    }
+    .cube-inner .top {
+      transform: rotateX(90deg) translateZ(25px);
+    }
+    .cube-inner .bottom {
+      transform: rotateX(-90deg) translateZ(25px);
+    }
+    .cube-inner .front {
+      transform: translateZ(25px);
+    }
+    .cube-inner .back {
+      transform: rotateX(-180deg) translateZ(25px);
+    }
+    .cube-inner .left {
+      transform: rotateY(-90deg) translateZ(25px);
+    }
+    .cube-inner .right {
+      transform: rotateY(90deg) translateZ(25px);
+    }
+
+    .cube {
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin: -50px 0 0 -50px;
+      transform-style: preserve-3d;
+      transform-origin: 50px 50px;
+      transform: rotateX(-33.5deg) rotateY(45deg);
+      animation: spin2 6s ease-in-out infinite 2s;
+    }
+    .cube li {
+      position: absolute;
+      display: block;
+      width: 100px;
+      height: 100px;
+      background: rgba(141, 214, 249, 0.5);
+      border: 1px solid #fff;
+    }
+    .cube .top {
+      transform: rotateX(90deg) translateZ(50px);
+    }
+    .cube .bottom {
+      transform: rotateX(-90deg) translateZ(50px);
+    }
+    .cube .front {
+      transform: translateZ(50px);
+    }
+    .cube .back {
+      transform: rotateX(-180deg) translateZ(50px);
+    }
+    .cube .left {
+      transform: rotateY(-90deg) translateZ(50px);
+    }
+    .cube .right {
+      transform: rotateY(90deg) translateZ(50px);
+    }
+
+    @keyframes spin1 {
+      0% {
+        transform: rotateX(-33.5deg) rotateY(45deg);
+      }
+      40%,
+      to {
+        transform: rotateX(-33.5deg) rotateY(-315deg);
+      }
+    }
+
+    @keyframes spin2 {
+      0% {
+        transform: rotateX(-33.5deg) rotateY(45deg);
+      }
+      40%,
+      to {
+        transform: rotateX(-33.5deg) rotateY(315deg);
+      }
+    }
+  </style>
+  <body>
+    <div class="demo-cube perspective">
+      <ul class="cube-inner">
+        <li class="top"></li>
+        <li class="bottom"></li>
+        <li class="front"></li>
+        <li class="back"></li>
+        <li class="right"></li>
+        <li class="left"></li>
+      </ul>
+      <ul class="cube">
+        <li class="top"></li>
+        <li class="bottom"></li>
+        <li class="front"></li>
+        <li class="back"></li>
+        <li class="right"></li>
+        <li class="left"></li>
+      </ul>
+    </div>
+    <style>
+      .test {
+        width: 100px;
+        height: 100px;
+        transform: rotate3d();
+      }
+    </style>
+    <div class="demo-cube">
+      <div class="test"></div>
+    </div>
+  </body>
+</html>

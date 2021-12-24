@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    body,
+    html {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background: #000;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    .box {
+      margin: 0 auto;
+      margin-top: 200px;
+      display: flex;
+      width: 320px;
+      height: 320px;
+      border: 1px solid #fff;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .item {
+      height: 100px;
+      width: 100px;
+      border: 1px solid #fff6;
+      position: relative;
+      color: #fff;
+      line-height: 100px;
+      text-align: center;
+    }
+    .start {
+      cursor: pointer;
+    }
+    .item.active {
+      box-shadow: 1px 0px 5px #f7db50 inset, 0px 1px 5px #f7db50 inset,
+        -1px 0px 5px #f7db50 inset, 0px -1px 5px #f7db50 inset;
+    }
+  </style>
+  <body>
+    <div class="box">
+      <div class="item prize">1</div>
+      <div class="item prize">2</div>
+      <div class="item prize">3</div>
+      <div class="item prize">4</div>
+      <div class="item start">开始</div>
+      <div class="item prize">5</div>
+      <div class="item prize">6</div>
+      <div class="item prize">7</div>
+      <div class="item prize">8</div>
+    </div>
+  </body>
+  <script>
+    const $ = (s) => {
+      let ds = document.querySelectorAll(s);
+      return ds.length == 1 ? ds[0] : ds;
+    };
+    const rd = function (n, r) {
+      if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+        var a = r;
+        (r = n), (n = a);
+      }
+      return Math.floor(Math.random() * (r - n + 1)) + n;
+    };
+  </script>
+  <script>
+    //跳动一次的时间
+    let timer = 1000;
+    // 转动多少圈
+    let ringNum;
+    // 所有奖品
+    const allPrize = $(".prize");
+    // 移动的真实顺序下标
+    const order = [0, 1, 2, 4, 7, 6, 5, 3];
+    // 奖品对象
+    let prizeObjs = [];
+    // dom下标
+    let activeDex;
+    allPrize.forEach((e, i) => {
+      prizeObjs.push({
+        item: e,
+        index: i,
+        active: false, // 中奖的可能性 1百分百 0表示不会中
+      });
+    });
+    prizeObjs[0].item.classList.add("active");
+    prizeObjs[0].active = true;
+    activeDex = 0;
+    let anm = null;
+    function autoFn() {
+      anm = window.setInterval(() => {
+        let index = order[activeDex];
+        prizeObjs[index].item.classList.remove("active");
+        prizeObjs[index].active = false;
+        activeDex++;
+        if (activeDex > prizeObjs.length - 1) {
+          activeDex = 0;
+        }
+        index = order[activeDex];
+        prizeObjs[index].item.classList.add("active");
+        prizeObjs[index].active = false;
+      }, timer);
+    }
+    autoFn();
+    $(".start").onclick = () => {
+      let winDex = rd(0, 7); // 选定奖品下标
+      ringNum = rd(4, 7); // 随机转 4-8圈
+      window.clearInterval(anm);
+      console.log(order[winDex] + 1); // 奖品
+      lotteryFn(winDex, ringNum);
+    };
+    // 抽奖
+    function lotteryFn(i, t) {
+      window.setTimeout(() => {
+        if (ringNum <= 0 && i === activeDex) {
+          window.clearTimeout(anm);
+          timer = 1000;
+          autoFn();
+          alert(`你获得了数字 ${order[i] + 1} 的内容`);
+          return;
+        }
+        let index = order[activeDex];
+        prizeObjs[index].item.classList.remove("active");
+        prizeObjs[index].active = false;
+        activeDex++;
+        if (activeDex > prizeObjs.length - 1) {
+          activeDex = 0;
+          ringNum--;
+          console.log(`第${t - ringNum}圈`);
+        }
+        index = order[activeDex];
+        prizeObjs[index].item.classList.add("active");
+        prizeObjs[index].active = false;
+        if (timer > 100 && ringNum > 0) {
+          timer -= 300;
+        } else if (timer < 1000 && ringNum <= 0) {
+          timer += 300;
+        }
+        lotteryFn(i, t);
+      }, timer);
+    }
+  </script>
+</html>

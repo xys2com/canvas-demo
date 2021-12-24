@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body,
+    html {
+      height: 100%;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    canvas {
+      position: absolute;
+      color: rgb(255, 255, 255);
+      background: #000;
+    }
+  </style>
+  <body></body>
+  <script>
+    window.$ = (e) => {
+      const els = document.querySelectorAll(e);
+      return els.length === 1 ? els[0] : els;
+    };
+    window.Rd = function (n, r) {
+      if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+        var a = r;
+        (r = n), (n = a);
+      }
+      return Math.floor(Math.random() * (r - n + 1)) + n;
+    };
+  </script>
+  <script>
+    // 定义一些常量
+    const WIDTH = document.documentElement.clientWidth;
+    const HEIGHT = document.documentElement.clientHeight;
+    const CANVAS = document.createElement("canvas");
+    let R = 1;
+    let ANM = null;
+    document.body.appendChild(CANVAS);
+    CANVAS.width = WIDTH;
+    CANVAS.height = HEIGHT;
+    const CTX = CANVAS.getContext("2d");
+    const { pow, PI, SQRT2, sin, abs, cos, tan, sqrt } = Math;
+    const Distance = function (x1, y1, x2, y2) {
+      var a = x2 - x1;
+      var b = y2 - y1;
+      return sqrt(a * a + b * b);
+    };
+    let bifurcateHeight = 3 / 10; // 分叉高度
+    let Branchs = [];
+
+    let Branch = function ({
+      growth_dir,
+      length,
+      node_r,
+      nx,
+      ny,
+      exc_dir,
+      Rt,
+      leave,
+    }) {
+      let deg = exc_dir ? Rd(20, 35) : -Rd(20, 35);
+      if (growth_dir) {
+        this.growth_dir = growth_dir + deg;
+      } else {
+        this.growth_dir = 80;
+      }
+      // this.growth_dir = growth_dir ? growth_dir + Rd(20, 35) : 90; // 生长方向
+      this.length = length ? length * 0.6 : 400; // 生长方向的直线长度
+      this.node_r = node_r; // 节点半径
+      this.sx = nx; // 起点x
+      this.sy = ny; // 起点y
+      this.nx = this.sx; // 当前x
+      this.ny = this.sy; // 当前y
+      this.exc_dir = exc_dir; // 为true 朝生长方向的右侧偏移 反之朝左侧偏移
+      this.end = false; // 是否完成当前枝干绘制
+      this.Rt = Rt || 1;
+      this.count = this.Rt * 10;
+      this.leave = leave ? leave + 1 : 1;
+    };
+
+    let root = new Branch({
+      node_r: 5,
+      nx: WIDTH / 2,
+      ny: (HEIGHT * 4) / 5,
+    });
+    Branchs.push(root);
+    drawTree();
+    function drawTree() {
+      let allEnd = true;
+      for (let i = 0; i < Branchs.length; i++) {
+        let e = Branchs[i];
+        // 判断树枝 是否完成长度
+        e.end = Distance(root.sx, root.sy, root.nx, root.ny) >= root.length;
+        if (e.end) {
+          continue;
+        }
+        // 求当前树枝 y 的增量
+
+        let exc_x =
+          (Rd(10, 20) / 5) * sin(((PI * 2) / 360) * abs(e.growth_dir - 90));
+        let exc_y =
+          (Rd(5, 10) / 5) * cos(((PI * 2) / 360) * abs(e.growth_dir - 90));
+        // let exc_x = (Rd(10, 20) / 50) * (1 + e.leave / 10);
+        // let exc_y = Rd(5, 10) / 3 / (1 + e.leave / 10);
+        const Prob = Rd(0, 9) === 0;
+        if (Prob) {
+          e.exc_dir = !e.exc_dir;
+        }
+        // 偏移方向
+        if (e.exc_dir) {
+          e.nx = e.nx + exc_x;
+        } else {
+          e.nx = e.nx - exc_x;
+        }
+        e.ny = e.ny - exc_y;
+        if (
+          Prob &&
+          Distance(e.sx, e.sy, e.nx, e.ny) > e.length * bifurcateHeight &&
+          e.Rt > 0.2 &&
+          e.count > 0
+        ) {
+          let n_b = new Branch(e);
+          Branchs.push(n_b);
+          e.count--;
+        }
+        // console.log(R);
+        // e.node_r = e.node_r * R;
+        CTX.beginPath();
+        CTX.arc(e.nx, e.ny, e.node_r * e.Rt, 0, 2 * Math.PI);
+        CTX.fillStyle = "#fff";
+        CTX.fill();
+        e.Rt = e.Rt * 0.994;
+      }
+      // 是否所有完成绘制
+      Branchs.forEach((e, i) => {
+        if (!e.end) {
+          allEnd = false;
+          return;
+        } else if (e.end && i === Branchs.length - 1) {
+          allEnd = true;
+        }
+      });
+      allEnd
+        ? window.cancelAnimationFrame(ANM)
+        : (ANM = requestAnimationFrame(drawTree));
+      // let exc_x = Rd(10, 20) / 40;
+      // let exc_y = Rd(5, 10) / 3;
+      // const Prob = Rd(0, 4) === 0;
+      // if (Prob) {
+      //   root.exc_dir = !root.exc_dir;
+      // }
+      // // 偏移方向
+      // if (root.exc_dir) {
+      //   root.nx = root.nx + exc_x;
+      // } else {
+      //   root.nx = root.nx - exc_x;
+      // }
+      // root.ny = root.ny - exc_y;
+      // if (
+      //   Prob &&
+      //   Distance(root.sx, root.sy, root.nx, root.ny) >
+      //     root.length * bifurcateHeight
+      // ) {
+      //   let n_b = new Branch(root);
+      //   Branchs.push(n_b);
+      // }
+      // // root.node_r = root.node_r * R;
+      // CTX.beginPath();
+      // CTX.arc(root.nx, root.ny, root.node_r * R, 0, 2 * Math.PI);
+      // CTX.fillStyle = "#fff";
+      // CTX.fill();
+      // R = R * 0.995;
+    }
+  </script>
+</html>
