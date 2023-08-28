@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body></body>
+	<script src="./three.min.js"></script>
+	<script>
+		window.$ = (e) => {
+			let t = document.querySelectorAll(e);
+			return t.length > 1 ? t : 1 === t.length ? t[0] : void 0;
+		};
+		window.$random = function (n, r) {
+			if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+				var a = r;
+				(r = n), (n = a);
+			}
+			return Math.floor(Math.random() * (r - n + 1)) + n;
+		};
+		const WIDTH = 1200,
+			HEIGHT = 800;
+		const ORIGIN = {
+			x: 0,
+			y: 0,
+			z: 0
+		};
+	</script>
+	<script>
+		// 更改着色器规则： 中心发亮内到边界递减的着色规则
+
+		// 计算在着色时着色范围到中心的距离
+		// 小于8% 着白色，整体并使用固色透明度
+		// 8% - 1 着渐变固色，透明度按照距离递增
+		const dotPointsShader = `float d=distance(gl_PointCoord, vec2(0.5, 0.5));
+    if(d < 0.08){
+      gl_FragColor = vec4(1, 1, 1, 1);
+      gl_FragColor.a = diffuseColor.a;
+    }else{
+      gl_FragColor.rgb = diffuseColor.rgb;
+      float cd =(1.0-d*2.0);
+      gl_FragColor.a=diffuseColor.a*cd*0.99;
+    }`;
+		class Dot {
+			constructor(x, y) {
+				this.x = x || $random(-30, 30);
+				this.y = y || $random(-30, 30);
+				this.z = $random(-30, 30);
+				this.size = $random(50, 150) / 100;
+				this.color = `hsl(${$random(360)}, 50%, 50%)`;
+				this.gemo = null; // 模型
+				this.mat = null; // 材质
+				this.dot = null; // 模型材质渲染出的dot对象
+				this.rx = $random(1, 5) / $random(500, 1500); // x变化速度
+				this.ry = $random(1, 5) / $random(500, 1500); // y变化速度
+				this.rz = $random(1, 5) / $random(500, 1500); // z变化速度
+				this.matOpacityDir = 1; // 变化方向
+				this.matOpacityCoeffi = $random(5, 30) / 1000; // 变化程度
+			}
+			createDot() {
+				let p1 = new THREE.Vector3(this.x, this.y, this.z);
+				this.gemo = new THREE.Geometry();
+				this.gemo.vertices.push(p1);
+
+				this.mat = new THREE.PointsMaterial({
+					size: this.size, //点大小
+					color: new THREE.Color(this.color), //颜色
+					transparent: true, // 开启透明,
+					depthTest: false // 关闭深度测试
+				});
+				this.mat.opacity = $random(2, 10) / 10;
+
+				this.mat.onBeforeCompile = (shader) => {
+					shader.fragmentShader = shader.fragmentShader.replace(
+						`gl_FragColor = vec4( outgoingLight, diffuseColor.a );`,
+						dotPointsShader
+					);
+				};
+
+				this.dot = new THREE.Points(this.gemo, this.mat);
+			}
+		}
+	</script>
+	<script>
+		function createDot(x = null, y = null) {
+			const obj = new Dot(x, y); //
+			obj.createDot();
+			return obj;
+		}
+		document.body.onclick = (e) => {
+			const { offsetX, offsetY } = e;
+			const x = offsetX % 30;
+			const y = offsetY % 30;
+			let obj = createDot(x, y);
+			scene.add(obj.dot);
+			Dots.push(obj);
+			console.log(Dots);
+		};
+
+		const renderer = new THREE.WebGLRenderer(); // 渲染器
+		renderer.setSize(WIDTH, HEIGHT); // 设置渲染器视窗大小 （canvas大小）
+		const scene = new THREE.Scene(); // 场景对象
+
+		let Dots = [];
+		const Num = 500;
+		for (let i = 0; i < Num; i++) {
+			let obj = createDot();
+			scene.add(obj.dot);
+			Dots.push(obj);
+		}
+		const camera = new THREE.PerspectiveCamera(70, WIDTH / HEIGHT, 1, 3000); // 相机
+		camera.position.set(20, 20, 20);
+		camera.lookAt(ORIGIN);
+
+		renderer.render(scene, camera);
+		document.body.appendChild(renderer.domElement);
+		function animate() {
+			requestAnimationFrame(animate);
+			Dots.map((obj) => {
+				obj.dot.rotation.x += obj.rx;
+				obj.dot.rotation.y += obj.ry;
+				obj.dot.rotation.z += obj.rz;
+				if (obj.mat.opacity < 0.2 || obj.mat.opacity > 1) {
+					obj.matOpacityDir *= -1;
+				}
+				obj.mat.opacity -= obj.matOpacityCoeffi * obj.matOpacityDir;
+			});
+			renderer.render(scene, camera);
+		}
+
+		animate();
+	</script>
+</html>

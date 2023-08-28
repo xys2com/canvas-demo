@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+		}
+	</style>
+	<body>
+		<div id="treejs"></div>
+	</body>
+	<script src="./three.min.js"></script>
+	<script>
+		(() => {
+			const WIDTH = 800,
+				HEIGHT = 600;
+
+			const renderer = new THREE.WebGLRenderer(); // 渲染器
+			renderer.setSize(WIDTH, HEIGHT); // 设置渲染器视窗大小 （canvas大小）
+			const scene = new THREE.Scene(); // 场景对象
+			const geometry = new THREE.BoxGeometry(4, 4, 4); // 创建立方体
+
+			geometry.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 10));
+
+			console.log(String(geometry.applyMatrix));
+			const material = new THREE.MeshStandardMaterial({
+				// 创建材质
+				// MeshBasicMaterial 不受光源影响；MeshStandardMaterial
+				color: 0xff0000,
+				transparent: true, //开启透明
+				opacity: 0.75 //设置透明度
+			});
+
+			const mesh = new THREE.Mesh(geometry, material); // 创建物体 使用 geometry 立方体，及 material 材质
+
+			scene.add(mesh); // 添加到场景
+
+			const axis = new THREE.AxisHelper(10); // 辅助线
+			scene.add(axis);
+
+			const camera = new THREE.PerspectiveCamera(70, WIDTH / HEIGHT, 1, 3000); // 相机
+			camera.position.set(-10, 10, 10);
+			// camera.lookAt(0, 0, 0); // <= 以往版本 ; 现在版本 => {x: 0,y:0,z:0}
+			camera.lookAt(mesh.position);
+
+			const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // 自然光，相当于当前场景所有物体基础光照度
+			scene.add(ambientLight);
+			const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+			directionalLight.position.set(6, 6, 6);
+			scene.add(directionalLight);
+			const directionalLightHelper = new THREE.DirectionalLightHelper(
+				directionalLight
+			);
+			scene.add(directionalLightHelper);
+			// 渲染器能够渲染阴影效果
+			renderer.shadowMap.enabled = true;
+			// 该方向会投射阴影效果
+			directionalLight.castShadow = true;
+			// 该物体体会产生影像效果
+			mesh.castShadow = true;
+
+			const floor = new THREE.BoxGeometry(20, 1, 20);
+			const floorMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+			const floorMesh = new THREE.Mesh(floor, floorMat);
+			floorMesh.position.y = -4;
+			floorMesh.receiveShadow = true;
+			scene.add(floorMesh);
+
+			renderer.render(scene, camera);
+
+			document.body.appendChild(renderer.domElement);
+
+			function animate() {
+				requestAnimationFrame(animate);
+				mesh.rotation.x += 0.01;
+				renderer.render(scene, camera);
+			}
+
+			animate();
+		})();
+	</script>
+</html>
