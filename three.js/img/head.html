@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		body {
+			background: #000;
+		}
+		#wrap {
+			height: 800px;
+			width: 800px;
+			background: linear-gradient(135deg, #fce0ab, #ffd687);
+		}
+		canvas {
+			position: absolute;
+			left: 0;
+			top: 0;
+			/* transform: scale(0.2); */
+		}
+	</style>
+	<body>
+		<div id="wrap"></div>
+	</body>
+	<script>
+		window.$ = (e) => {
+			let t = document.querySelectorAll(e);
+			return t.length > 1 ? t : 1 === t.length ? t[0] : void 0;
+		};
+		window.$random = function (n, r) {
+			if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+				var a = r;
+				(r = n), (n = a);
+			}
+			return Math.floor(Math.random() * (r - n + 1)) + n;
+		};
+	</script>
+	<script>
+		const HEIGHT = 800;
+		const WIDTH = 800;
+		const ICONSIZE = 128;
+		const canvas = document.createElement("canvas");
+		const headCover = document.createElement("canvas");
+		const headCtx = headCover.getContext("2d");
+		const ctx = canvas.getContext("2d");
+		document.body.appendChild(canvas);
+		document.body.appendChild(headCover);
+		headCover.style.filter = `drop-shadow(8px 10px 10px #0008)`;
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		headCover.width = WIDTH;
+		headCover.height = HEIGHT;
+		function loadimg(src) {
+			return new Promise((resp, rejc) => {
+				let img = new Image();
+				img.src = src;
+				img.onload = () => {
+					// document.body.appendChild(img);
+					resp(img);
+				};
+				img.onerror = () => {
+					rejc("Error loading");
+				};
+			});
+		}
+		async function main() {
+			const lgc = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+			// lgc.addColorStop(0, "#ffd687dd");
+			// lgc.addColorStop(1, "#ffd687ff");
+			// ctx.fillStyle = lgc;
+			// ctx.fillRect(0, 0, WIDTH, HEIGHT);
+			addImage("./star1.png", [680, 720, ICONSIZE, ICONSIZE, 0.8]);
+			addImage("./star5.png", [640, 60, ICONSIZE, ICONSIZE, 0.8]);
+			addImage("./star5.png", [680, 70, ICONSIZE, ICONSIZE, 0.4]);
+			addImage("./star5.png", [630, 0, ICONSIZE, ICONSIZE, 0.2]);
+			addImage("./star7.png", [140, 120, ICONSIZE, ICONSIZE, 3]);
+			addImage("./star4.png", [580, 500, ICONSIZE, ICONSIZE, 1]);
+			addImage("./star3.png", [100, 640, ICONSIZE, ICONSIZE, 2]);
+			addImage("./star8.png", [220, 40, ICONSIZE, ICONSIZE, 1]);
+			addImage("./head.png", [0, 0, WIDTH, HEIGHT, 1], headCtx);
+		}
+
+		async function addImage(src, options, _ctx) {
+			const [x, y, w, h, s, guides] = options;
+			let img = await loadimg(src);
+			if (guides) document.body.appendChild(img);
+			const context = _ctx || ctx;
+			const _x = x + (w - w * s) / 2;
+			const _y = y + (h - h * s) / 2;
+			const _w = w * s;
+			const _h = h * s;
+			if (guides) addGuides(context, [_x, _y, _w, _h], [x, y, w, h]);
+			context.drawImage(img, _x, _y, _w, _h);
+		}
+
+		function addGuides(context, [_x, _y, _w, _h], [x, y, w, h]) {
+			context.save();
+			context.beginPath();
+			context.moveTo(_x, _y);
+			context.lineTo(_x + _w, _y);
+			context.lineTo(_x + _w, _y + _h);
+			context.lineTo(_x, _y + _h);
+			context.lineTo(_x, _y);
+			context.strokeStyle = "#f00";
+			context.stroke();
+
+			context.beginPath();
+			context.moveTo(x, y);
+			context.lineTo(x + w, y);
+			context.lineTo(x + w, y + h);
+			context.lineTo(x, y + h);
+			context.lineTo(x, y);
+			context.strokeStyle = "#0f0";
+			context.stroke();
+			context.restore();
+		}
+
+		main();
+	</script>
+</html>

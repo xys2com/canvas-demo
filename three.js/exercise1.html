@@ -33,14 +33,15 @@
 		// 计算在着色时着色范围到中心的距离
 		// 小于8% 着白色，整体并使用固色透明度
 		// 8% - 1 着渐变固色，透明度按照距离递增
-		const dotPointsShader = `float d=distance(gl_PointCoord, vec2(0.5, 0.5));
+		const dotPointsShader = `
+		float d=distance(gl_PointCoord, vec2(0.5, 0.5));
     if(d < 0.08){
       gl_FragColor = vec4(1, 1, 1, 1);
       gl_FragColor.a = diffuseColor.a;
     }else{
       gl_FragColor.rgb = diffuseColor.rgb;
       float cd =(1.0-d*2.0);
-      gl_FragColor.a=diffuseColor.a*cd*0.99;
+      gl_FragColor.a=diffuseColor.a*cd;
     }`;
 		class Dot {
 			constructor(x, y) {
@@ -67,7 +68,7 @@
 					size: this.size, //点大小
 					color: new THREE.Color(this.color), //颜色
 					transparent: true, // 开启透明,
-					depthTest: false // 关闭深度测试
+					depthTest: true // 关闭深度测试
 				});
 				this.mat.opacity = $random(2, 10) / 10;
 

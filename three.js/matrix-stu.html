@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body></body>
+	<script src="./gl-matrix.js"></script>
+	<script>
+		// 长度为100的正方形 右上顶点在0 0
+		// 四维矩阵表现数组
+		// xyz 三维坐标
+		// w 法线方向
+		// 意义 [x1,  y1, z1, w1, x2,   y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4]
+		// 下标 [0,   1,  2,  3,  4,    5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15]
+		// 数据 [0,   0,  1,  1,  100,  0,  1,  1,  0,  100,1,  1,  100,100,1,  1];
+		const square = new Float32Array([
+			0, 0, 1, 1, 100, 0, 1, 1, 0, 100, 1, 1, 100, 100, 1, 1
+		]);
+		// 延x,y轴缩放2倍
+		// 四维缩放矩阵
+		const matrixScale = new Float32Array([
+			2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+		]);
+		// matrixScale * square
+		// 矩阵变换
+
+		const out = new Float32Array([
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		]);
+
+		const squareScale = glMatrix.mat4.multiply(out, matrixScale, square);
+		console.log(Array.from(squareScale));
+		// [0, 0, 1, 1, 200, 0, 1, 1, 0, 200, 1, 1, 200, 200, 1, 1]
+
+		// 数据 => 目标数据
+		// [[1,2],[3,4]] => [[1,1,2,2],1,1,2,2],[3,3,4,4],[3,3,4,4]]
+		// 1 2      1 1 2 2
+		// 3 4      1 1 2 2
+		//          3 3 4 4
+		//          3 3 4 4
+		const array = [
+			[1, 2],
+			[3, 4]
+		];
+		function scaleMini(list, rate) {
+			if (rate % 1 != 0) throw new Error("非整数倍率");
+			return Array.from({ length: list.length * rate }, (zyh, indexy) => {
+				return Array.from({ length: list[0].length * rate }, (zyw, indexx) => {
+					return list[Math.floor(indexy / rate)][Math.floor(indexx / rate)];
+				});
+			});
+		}
+		let arrayScale = scaleMini(array, 2);
+		console.log(arrayScale);
+	</script>
+</html>

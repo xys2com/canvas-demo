@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+		}
+	</style>
+	<body>
+		<div>
+			<canvas id="cvs"></canvas>
+			<canvas id="cvs2"></canvas>
+			<canvas id="cvs3"></canvas>
+			<canvas id="cvs4"></canvas>
+		</div>
+	</body>
+	<script src="../glsl/perlin.js"></script>
+	<script>
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		window.CANVAS = [];
+		window.CTXS = [];
+		window.COLOR = [];
+		window.FUNCTION = [
+			"OCCUPIED",
+			lineinsertSmoothv1,
+			lineinsertSmoothv2,
+			lineinsert
+		];
+		const WIDTH = 400;
+		const HEIGHT = 300;
+	</script>
+	<script>
+		let canvas = $("#cvs");
+		let canvas2 = $("#cvs2");
+		let canvas3 = $("#cvs3");
+		let canvas4 = $("#cvs4");
+
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		canvas2.width = WIDTH;
+		canvas2.height = HEIGHT;
+		canvas3.width = WIDTH;
+		canvas3.height = HEIGHT;
+		canvas4.width = WIDTH;
+		canvas4.height = HEIGHT;
+		CANVAS.push(canvas, canvas2, canvas3, canvas4);
+
+		const ctx1 = canvas.getContext("2d");
+		const ctx2 = canvas2.getContext("2d");
+		const ctx3 = canvas3.getContext("2d");
+		const ctx4 = canvas4.getContext("2d");
+		CTXS.push(ctx1, ctx2, ctx3, ctx4);
+
+		const dotColor = "#f00";
+		const lineColor = "#ff0";
+
+		COLOR.push("#ff0", "#f0f", "#0f0", "#0ff");
+		const STEP = 0.1;
+
+		let Dots = [];
+
+		canvas.addEventListener("click", drawDot);
+
+		function drawDot(evt) {
+			const { offsetX, offsetY } = evt;
+			Dots.push([offsetX, offsetY]);
+			dot(ctx1, loopLine);
+			dot(ctx2, loopSmoothLine2);
+			dot(ctx3, loopSmoothLine3);
+			dot(ctx4, loopSmoothLine4);
+		}
+
+		function dot(ctx, callback) {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.save();
+			Dots.map((dot, i) => {
+				const [x, y] = dot;
+				ctx.beginPath();
+				ctx.strokeStyle = dotColor;
+				ctx.fillStyle = dotColor;
+				ctx.arc(x, y, 3, 0, 2 * Math.PI);
+				ctx.stroke();
+				ctx.fill();
+				ctx.closePath();
+
+				const dotnext = Dots[i + 1];
+				if (dotnext) {
+					const dot2 = getCenterDot(dot, dotnext);
+					let [_x, _y] = dot2;
+					ctx.beginPath();
+					ctx.strokeStyle = "#f008";
+					ctx.fillStyle = "#f008";
+					ctx.arc(_x, _y, 2, 0, 2 * Math.PI);
+					ctx.stroke();
+					ctx.fill();
+					ctx.closePath();
+				}
+			});
+			ctx.restore();
+			callback();
+		}
+
+		function getCenterDot(dot1, dot2) {
+			return [
+				(dot2[0] - dot1[0]) / 2 + dot1[0],
+				(dot2[1] - dot1[1]) / 2 + dot1[1]
+			];
+		}
+
+		function loopLine() {
+			if (Dots.length == 2) {
+				ctx1.save();
+				ctx1.beginPath();
+				ctx1.moveTo(...Dots[0]);
+				ctx1.lineTo(...Dots[1]);
+				ctx1.strokeStyle = COLOR[0];
+				ctx1.stroke();
+				ctx1.closePath();
+				ctx1.restore();
+			} else if (Dots.length > 2) {
+				Dots.map((dot, i) => {
+					if (i == 0) {
+						ctx1.save();
+						ctx1.beginPath();
+						ctx1.moveTo(...dot);
+					} else if (i == Dots.length - 1) {
+						ctx1.lineTo(...dot);
+						// ctx1.lineTo(...Dots[0]);
+						ctx1.strokeStyle = COLOR[0];
+						ctx1.stroke();
+						ctx1.closePath();
+						ctx1.restore();
+					} else {
+						ctx1.lineTo(...dot);
+					}
+				});
+			}
+			fillText("直线", CTXS[0], COLOR[0]);
+		}
+
+		function loopSmooth(dot1, dot2, type) {
+			let sdot = [];
+			const _ctx = CTXS[type];
+			const _fun = FUNCTION[type]; //this[`lineinsertSmoothv${type}`];
+
+			const [x1, y1] = dot1;
+			const [x2, y2] = dot2;
+			const k = (y2 - y1) / (x2 - x1);
+
+			const disx = x2 - x1;
+			const disy = y2 - y1;
+			const _disx = Math.abs(disx); // x差量
+			const _disy = Math.abs(disy); // y差量
+
+			const useX = _disx > _disy;
+			const count = useX ? _disx : _disy;
+
+			let _x1 = x1,
+				_y1 = y1,
+				_x2 = x2,
+				_y2 = y2;
+			const xDir = disx > 0 ? 1 : -1;
+			const yDir = disy > 0 ? 1 : -1;
+
+			// if (disx < 0) {
+			// 	console.log("置换 x 点位");
+			// 	_x1 = x2;
+			// 	_x2 = x1;
+			// }
+			// if (disy < 0) {
+			// 	console.log("置换 y 点位");
+			// 	_y1 = y2;
+			// 	_y2 = y1;
+			// }
+			for (let i = 0; i <= count; i++) {
+				// i 为 x || y 的变化量
+				const t = i / count;
+				let x, y, dx, dy;
+				let _dir = useX ? xDir : yDir;
+				if (useX) {
+					x = _x1 + i * _dir; //
+					dy = i * k; // y的变化量
+					y = _fun(_y1 + dy, _y2, t);
+				} else {
+					y = _y1 + i * _dir; //
+					dx = i / k;
+					x = _fun(_x1 + dx, _x2, t);
+				}
+				_ctx.fillStyle = COLOR[type];
+				_ctx.fillRect(x, y, 1, 1);
+			}
+		}
+		// maxv最大量，dv变化量，dx x差量，dy y差量
+		function xyMaxCacl(maxv, dv, dx, dy) {}
+
+		function fillText(text, ctx, color) {
+			ctx.save();
+			ctx.fillStyle = color;
+			ctx.font = "16px Microsoft YaHei";
+			ctx.fillText(text, 10, 15);
+			ctx.restore();
+		}
+
+		function loopSmoothLine2() {
+			if (Dots.length >= 2)
+				Dots.map((e, i) => {
+					const dot1 = e;
+					const dot2 = Dots[i + 1];
+					if (dot1 && dot2) {
+						// const cdot = getCenterDot(dot1, dot2);
+						// loopSmooth(dot1, cdot, 1);
+						// loopSmooth(cdot, dot2, 1);
+
+						loopSmooth(dot1, dot2, 1);
+					}
+				});
+
+			fillText(
+				"3次曲线插值 v1 + t * (v2 - v1),3t^2 - 2t^3,t∈[0,1]",
+				CTXS[1],
+				COLOR[1]
+			);
+		}
+
+		function loopSmoothLine3() {
+			if (Dots.length >= 2)
+				Dots.map((e, i) => {
+					const dot1 = e;
+					const dot2 = Dots[i + 1];
+					if (dot1 && dot2) {
+						// const cdot = getCenterDot(dot1, dot2);
+						// loopSmooth(dot1, cdot, 2);
+						// loopSmooth(cdot, dot2, 2);
+						loopSmooth(dot1, dot2, 2);
+					}
+				});
+			fillText(
+				"5次曲线插值 v1 + t * (v2 - v1),6t^5 - 15t^4 + 10t^3,t∈[0,1]",
+				CTXS[2],
+				COLOR[2]
+			);
+		}
+
+		function loopSmoothLine4() {
+			if (Dots.length >= 2)
+				Dots.map((e, i) => {
+					const dot1 = e;
+					const dot2 = Dots[i + 1];
+					if (dot1 && dot2) {
+						// const cdot = getCenterDot(dot1, dot2);
+						// loopSmooth(dot1, cdot, 3);
+						// loopSmooth(cdot, dot2, 3);
+						loopSmooth(dot1, dot2, 3);
+					}
+				});
+			fillText("基础线性插值 v1 + t * (v2 - v1),t∈[0,1]", CTXS[3], COLOR[3]);
+		}
+	</script>
+</html>

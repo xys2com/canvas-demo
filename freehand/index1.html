@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+		}
+	</style>
+	<body></body>
+	<script src="./tween.js"></script>
+	<script src="./gl-matrix.js"></script>
+	<script src="./event-manager.js"></script>
+	<script src="./handv0.12.js"></script>
+	<script>
+		const hands = new HandDraw({
+			x: 0,
+			y: 0,
+			width: 1920,
+			height: 800,
+			lineColor: "#fff",
+			zIndex: 1
+		});
+		const evtMng = new AnimationEventBus();
+		const ctx = hands.getCtx();
+		const path = [
+			{
+				x: 100,
+				y: 150
+			},
+			{
+				x: 400,
+				y: 120
+			},
+			{
+				x: 450,
+				y: 240
+			}
+		];
+		const lines = hands.initLinePath(path, 4);
+		// 矩形1
+		let polygon = hands.createRect([50, 50, 130, 60]);
+		// 矩形2
+		let polygon2 = hands.createRect([80, 80, 130, 60]);
+		// 三角形
+		let polygon3 = hands.createPolygon([
+			{
+				x: 50,
+				y: 50
+			},
+			{
+				x: 100,
+				y: 140
+			},
+			{
+				x: 0,
+				y: 100
+			}
+		]);
+		// 五边形
+		let polygon4 = hands.createPolygon([
+			{
+				x: 230,
+				y: 50
+			},
+			{
+				x: 270,
+				y: 76
+			},
+			{
+				x: 250,
+				y: 113
+			},
+			{
+				x: 196,
+				y: 104
+			},
+			{
+				x: 175,
+				y: 68
+			}
+		]);
+
+		// scaleLine();
+		function scaleLine() {
+			let duration = 3000;
+			let t = 0;
+			let rateStart = 1;
+			let rateEnd = 2;
+			let frameCount = (duration / 1000) * 60;
+
+			const line = lines[0];
+			let evtid = evtMng.addEvent({
+				event: () => {
+					let rate = Math.tween.Elastic.easeInOut(
+						t,
+						rateStart,
+						rateEnd,
+						frameCount
+					);
+					hands.updateLineInZoom(line, rate);
+					if (t >= frameCount) {
+						hands.setLineRealZoom(line);
+						evtMng.removeEvent(evtid);
+					}
+					t++;
+
+					hands.clear();
+					hands.refresh();
+				}
+			});
+		}
+
+		const canvas = hands.getCanvas();
+		// 缓存鼠标按下选中图形
+		let mousePitchGraph = null;
+		// 缓存鼠标进入图形
+		let mouseEnterGraph = null;
+		let moveStartx = 0;
+		let moveStarty = 0;
+		// 检测是否存在鼠标进入的图形
+		function checkMouseInGraph(e) {
+			const { clientX, clientY } = e;
+			let _mEG = hands.mouseEnterChecked(clientX, clientY);
+			if (mouseEnterGraph && _mEG && _mEG.id == mouseEnterGraph.id) return;
+			if (_mEG) {
+				// 如果之前不存在 缓存图形
+				if (!mouseEnterGraph) mouseEnterGraph = _mEG;
+
+				// 如果之前的缓存图形id与当前id不符合
+				// 重置之前图形，并更新缓存图形
+				if (mouseEnterGraph && _mEG.id != mouseEnterGraph.id) {
+					hands.updateGraphZoom(mouseEnterGraph, 1);
+					hands.initGraphStatus(mouseEnterGraph);
+					mouseEnterGraph = _mEG;
+				}
+
+				hands.updateGraphZoom(mouseEnterGraph, 1.1);
+				hands.refresh();
+			} else if (mouseEnterGraph) {
+				hands.updateGraphZoom(mouseEnterGraph, 1);
+				mouseEnterGraph = null;
+				hands.refresh();
+			}
+		}
+
+		// 图形拖动
+		function mousePitchGraphDrag(e) {
+			// const { clientX, clientY, movementX, movementY } = e;
+			// movementX, movementY 不准确
+			const { clientX, clientY } = e;
+			// 手动计算移动的坐标
+			const moveX = clientX - moveStartx;
+			const moveY = clientY - moveStarty;
+
+			let isInGraph =
+				mousePitchGraph &&
+				isPointInPolygon(
+					{ x: clientX, y: clientY },
+					mousePitchGraph.zoomPoints
+				);
+
+			if (!isInGraph) {
+				// 移动时鼠标超出图形区域
+				moveCheck();
+				hands.initGraphStatus(mousePitchGraph);
+				moveStartx = clientX;
+				moveStarty = clientY;
+				hands.refresh();
+				mousePitchGraph = null;
+			} else {
+				hands.move(mousePitchGraph, moveX, moveY);
+				moveStartx = clientX;
+				moveStarty = clientY;
+				hands.refresh();
+				hands.refreshGraph(mousePitchGraph, ["#f00", "#f003"]);
+			}
+		}
+
+		// 节流函数返回匿名函数，而 removeEventListener 解绑函数，函数指针必须与注册时的函数指针相同
+		// 用变量接受 throttle 返回的匿名函数，指针统一
+		const throttleCheckMouseInGraph = throttle(checkMouseInGraph, 50);
+
+		// 1 画布移动默认事件 节流 50ms
+		// 2 画布图形拖动事件
+		function moveCheck(type = 1) {
+			if (type == 1) {
+				canvas.removeEventListener("mousemove", mousePitchGraphDrag);
+				canvas.addEventListener("mousemove", throttleCheckMouseInGraph);
+			} else {
+				canvas.removeEventListener("mousemove", throttleCheckMouseInGraph);
+				canvas.addEventListener("mousemove", mousePitchGraphDrag);
+			}
+		}
+		moveCheck();
+
+		// 点击时将选中的图形onpitch 设置为true
+		canvas.addEventListener("mousedown", function (e) {
+			const { clientX, clientY } = e;
+			// 查询鼠标进入的图形
+			let _mEG = hands.mouseEnterChecked(clientX, clientY);
+			if (_mEG) {
+				moveStartx = clientX;
+				moveStarty = clientY;
+				mousePitchGraph = _mEG;
+				// 刷新canvas所有内容，不刷新当前 mousePitchGraph
+				hands.refresh(mousePitchGraph.id);
+				hands.refreshGraph(mousePitchGraph, ["#f00", "#f003"]);
+				mousePitchGraph.onpitch = true;
+				moveCheck(2);
+			}
+		});
+
+		canvas.addEventListener("mouseup", function (e) {
+			const { clientX, clientY } = e;
+			let isInGraph =
+				mousePitchGraph &&
+				isPointInPolygon(
+					{ x: clientX, y: clientY },
+					mousePitchGraph.zoomPoints
+				);
+			if (mousePitchGraph && mousePitchGraph.onpitch && isInGraph) {
+				hands.initGraphStatus(mousePitchGraph);
+				moveStartx = clientX;
+				moveStarty = clientY;
+
+				hands.refresh();
+				moveCheck();
+			}
+		});
+	</script>
+</html>

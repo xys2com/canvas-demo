@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+			border: 1px solid #fff;
+		}
+	</style>
+	<body></body>
+	<script src="./perlin.js"></script>
+	<script>
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		window.CANVAS = [];
+		window.CTXS = [];
+		window.COLOR = ["#f00", "#ff0", "#0f0", "#0ff"];
+		window.FUNCTION = [lineinsertSmoothv1, lineinsertSmoothv2, lineinsert];
+		const WIDTH = 400;
+		const HEIGHT = 300;
+
+		const DOTCOUNT = 100; // 点位之间的个数
+
+		const TestCount = 10;
+
+		// 动态点位数据
+		const TestData = (() => {
+			let data = [];
+			for (let i = 0; i < TestCount; i++) {
+				let step = (WIDTH - 40) / (TestCount - 1);
+				let x = 20 + i * step;
+				let y = random(75, HEIGHT - 75); // 75 - 225 的随机值
+				data.push([x, y]);
+			}
+			return data;
+		})();
+
+		// 填充文字
+		function fillText(text, ctx, color, top) {
+			ctx.save();
+			ctx.fillStyle = color;
+			ctx.font = "16px Microsoft YaHei";
+			ctx.fillText(text, 10, top);
+			ctx.restore();
+		}
+
+		// 注册canvas
+		function registerCanvas(id, name, name2) {
+			let dom = document.getElementById(id);
+			const canvas = dom ? dom : document.createElement("canvas");
+			const ctx = canvas.getContext("2d");
+			canvas.id = id;
+			canvas.width = WIDTH;
+			canvas.height = HEIGHT;
+			CANVAS.push(canvas);
+			document.body.appendChild(canvas);
+			fillText(name, ctx, "#fffd", 16);
+			fillText(name2, ctx, "#fffd", 32);
+			return {
+				canvas,
+				ctx
+			};
+		}
+
+		// 插入点位
+		function dotin(ctx, dot) {
+			ctx.save();
+			const [x, y] = dot;
+			ctx.beginPath();
+			ctx.strokeStyle = COLOR[0];
+			ctx.fillStyle = COLOR[0];
+			ctx.arc(x, y, 2, 0, 2 * Math.PI);
+			ctx.stroke();
+			ctx.fill();
+			ctx.closePath();
+			ctx.restore();
+		}
+	</script>
+	<script>
+		// 一维柏林噪声
+		// smoothType 插值类型，0线性插值，1 3次方插值，2 5次方插值
+		function perlinInOne(smoothType) {
+			const functions = [(t) => t, smoothSpline1, smoothSpline2];
+			const name = [
+				"插值折线图",
+				"3次方插值柏林噪声曲线",
+				"5次方值柏林噪声曲线"
+			];
+			const formula = [
+				"none",
+				"t = 3t^2 - 2t^3, t∈[0,1]",
+				"t = 6t^5 - 15t^4 + 10t^3, t∈[0,1]"
+			];
+			const { canvas, ctx } = registerCanvas(
+				`pl-canvas-${smoothType}`,
+				`一维${name[smoothType]}`,
+				`公式：${formula[smoothType]}`
+			);
+			const fun = functions[smoothType];
+			const linecolor = COLOR[2];
+			TestData.map((dot, index) => {
+				const dot1 = dot;
+				const dot2 = TestData[index + 1];
+				let _dot = [];
+				if (dot2) {
+					const max = DOTCOUNT; //dot2[0] - dot1[0];
+					const xStep = (dot2[0] - dot1[0]) / max;
+					const [x1, y1] = dot1;
+					const [x2, y2] = dot2;
+					for (let i = 0; i < max; i++) {
+						let _x = (dot1[0] + i) % 360;
+
+						const t = fun(i / max);
+						const x = x1 + i * xStep;
+						const y = lerp(y1, y2, t);
+						ctx.fillStyle = linecolor;
+						ctx.fillRect(x - 0.5, y - 0.5, 2, 2);
+
+						if (i == 0) {
+							const timestampRad = (Date.now() / 10) % 360; // 根据时间戳来计算 弧度
+							const xRad = x % 360;
+							// const offsety = Math.cos((timestampRad + xRad) * (Math.PI / 180));
+							// dot2[1] -= offsety;
+							_dot = [x, y];
+						}
+					}
+				}
+
+				dotin(ctx, _dot);
+			});
+		}
+		// 折线图
+		function brokenLine() {
+			const { canvas, ctx } = registerCanvas(
+				`line-canvas`,
+				`常规折线图`,
+				`公式：-`
+			);
+			TestData.map((dot) => {
+				ctx.lineWidth = 2;
+				ctx.save();
+				ctx.lineTo(...dot);
+				ctx.strokeStyle = COLOR[1];
+				ctx.stroke();
+				ctx.restore();
+				dotin(ctx, dot);
+			});
+		}
+		function main() {
+			brokenLine();
+			perlinInOne(0);
+			perlinInOne(1);
+			perlinInOne(2);
+
+			showdata();
+			// requestAnimationFrame(main);
+		}
+		function showdata() {
+			let _datadom = document.getElementById("data-dom");
+			const DATADOM = _datadom ? _datadom : document.createElement("div");
+			DATADOM.id = "data-dom";
+			!_datadom ? document.body.appendChild(DATADOM) : void 0;
+
+			let _dotdom = document.getElementById("dot-dom");
+			const DotData = document.createElement("p");
+			DotData.id = "dot-dom";
+			DotData.innerHTML = `点位数据：${TestData}`;
+			!_dotdom ? DATADOM.appendChild(DotData) : void 0;
+		}
+		main();
+	</script>
+</html>

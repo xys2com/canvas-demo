@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		body {
+			height: 100vh;
+			padding: 0;
+			margin: 0;
+		}
+		.wrap {
+			position: absolute;
+			border: 1px solid #0f0;
+			height: 400px;
+			width: 400px;
+			top: 360px;
+			line-height: 400px;
+		}
+		.div2 {
+			left: 400px;
+		}
+		.div3 {
+			left: 800px;
+		}
+	</style>
+	<body>
+		比率：
+		<input
+			type="range"
+			onchange="rate1Change(this.value)"
+			step="1"
+			value="50"
+			min="0"
+			max="100"
+		/>
+		方向1：
+		<input
+			type="range"
+			onchange="dir1Change(this.value)"
+			step="2"
+			value="1"
+			min="-1"
+			max="1"
+		/>
+		方向2：
+		<input
+			type="range"
+			onchange="dir2Change(this.value)"
+			step="2"
+			value="-1"
+			min="-1"
+			max="1"
+		/>
+		振幅：
+		<input
+			type="range"
+			onchange="amp1Change(this.value)"
+			step="1"
+			value="50"
+			min="0"
+			max="100"
+		/>
+		速度：
+		<input
+			type="range"
+			onchange="spd1Change(this.value)"
+			step="0.09"
+			value="1"
+			min="1"
+			max="10"
+		/>
+		周期：
+		<input
+			type="range"
+			onchange="period1Change(this.value)"
+			step="1"
+			value="1"
+			min="1"
+			max="10"
+		/>
+		<input type="button" value="添加新水球图" id="add-btn" />
+		<div>
+			振幅、速度皆可参考方向，细分振幅1、2；速度1、2。若想添加周期不同的波，在类中修改
+			period 为数组，参考上三条属性
+		</div>
+		<div class="wrap div1">点击div 在此div添加水球图</div>
+		<div class="wrap div2">点击div 预览完整动画</div>
+		<div class="wrap div3">点击div 预览完整动画 使用缓动函数</div>
+	</body>
+	<script>
+		const $ = (el) => {
+			const els = document.querySelectorAll(el);
+			return els.length === 1 ? els[0] : Array.from(els);
+		};
+		const $isDOM = (item) => {
+			return typeof HTMLElement === "function"
+				? item instanceof HTMLElement
+				: item &&
+						typeof item === "object" &&
+						item.nodeType === 1 &&
+						typeof item.nodeName === "string";
+		};
+		// 动画事件管理器
+		// 你不一定要用
+		class AnimationEventBus {
+			constructor() {
+				this.eventBus = [];
+				this.run = false;
+				this.anm = null;
+			}
+			// 开始事件循环
+			eventBegin() {
+				if (this.run) return;
+				this.run = true;
+				this.anm = window.requestAnimationFrame(this.loopevent.bind(this));
+			}
+			// 结束事件循环
+			eventEnd() {
+				if (!this.run) return;
+				this.run = false;
+				window.cancelAnimationFrame(this.anm);
+				this.anm = null;
+			}
+			// 添加循环事件
+			addEvent(options) {
+				const { event, params, id } = options;
+				const _id = id ? id : `evt-${Math.random().toString(32).slice(-8)}`;
+				this.eventBus.push({
+					event,
+					params: params ? params : [],
+					id: _id
+				});
+				if (this.eventBus.length == 1) this.eventBegin();
+				return _id;
+			}
+			// 移除某个事件
+			removeEvent(id) {
+				const index = this.eventBus.findIndex((e) => e.id == id);
+				this.eventBus.splice(index, 1);
+				if (!this.eventBus.length) this.eventEnd();
+			}
+			// 执行循环事件
+			loopevent() {
+				this.eventBus.map((evt) => {
+					const event = evt.event;
+					const params = evt.params;
+					event(...params);
+				});
+				if (this.run) window.requestAnimationFrame(this.loopevent.bind(this));
+			}
+		}
+		// 水球图类
+		class WaterPolo {
+			constructor(options) {
+				// 位置、大小
+				const {
+					x,
+					y,
+					width,
+					height,
+					el,
+					zIndex,
+					id,
+					rate,
+					period,
+					classname,
+					colors = [
+						// 在new WaterPolo 时传入
+						["#f00", "#00f"], // 渐变1
+						["#f008", "#00f8"] // 渐变2
+					],
+					amplitudes = [50, 50],
+					speeds = [1, 1], // 速度
+					dirs = [1, -1] // 方向
+				} = options;
+
+				const _el = el ? ($isDOM(el) ? el : $(el)) : document.body;
+				const canvas = document.createElement("canvas");
+				// 外部若没有传入id则生成一个id
+				const _id = id ? id : Math.random().toString(32).slice(-8);
+				canvas.setAttribute("id", _id);
+				if (classname) canvas.classList.add(classname);
+				this.id = _id;
+				this.classname = classname || "";
+				this.canvas = canvas;
+				this.ctx = canvas.getContext("2d");
+				this.height = height;
+				this.width = width;
+
+				// 振幅
+				this.amplitudes = amplitudes || [50, 50];
+
+				// 2 在这里表示波长为canvas宽度的一半
+				// 2 在这里表示整个canvas宽度出现两个周期的波
+				this.period = period || 2;
+
+				this.moveXs = [0, 0]; // 起始位置
+				this.speeds = speeds || [1, 1]; // 控制x轴移动速度 波速
+				this.dirs = dirs || [1, 1]; // 移动方向 1为从右至左，-1相反（只是视觉感官上的方向）
+				this.rate = rate; // 占比 实际的水面高度
+				this.showRateLine = options.hasOwnProperty("showRateLine")
+					? options.showRateLine
+					: false;
+				// 波长/周期/频率,
+				this.wavelength = (this.period * Math.PI) / width;
+
+				this.canvas.style.position = "absolute";
+				canvas.style.zIndex = zIndex;
+				canvas.style.left = `${x}px`;
+				canvas.style.top = `${y}px`;
+				canvas.width = width;
+				canvas.height = height;
+				canvas.style.borderRadius = "50%";
+				// canvas.style.border = "1px solid red";
+				canvas.style.overflow = "hidden";
+				this.color1 = colors[0];
+				this.color2 = colors[1];
+				_el.appendChild(canvas);
+			}
+			// 设置占比
+			setRate(rate) {
+				this.rate = rate;
+			}
+			// 设置波高
+			setAmp([a1, a2]) {
+				this.amplitudes = [a1, a2];
+			}
+			// 设施速度
+			setSpeed([v1, v2]) {
+				this.speeds = [v1, v2];
+			}
+			setPeriod(p) {
+				this.period = p;
+				this.wavelength = (this.period * Math.PI) / this.width;
+			}
+			setDir1(v) {
+				let ds = this.dirs;
+				this.dirs = [v, ds[1]];
+			}
+			setDir2(v) {
+				let ds = this.dirs;
+				this.dirs = [ds[0], v];
+			}
+
+			// 调试用
+			drawRateLine() {
+				const ctx = this.ctx;
+				ctx.save();
+				ctx.beginPath();
+				ctx.moveTo(0, this.height * (1 - this.rate / 100));
+				ctx.lineTo(this.width, this.height * (1 - this.rate / 100));
+				ctx.strokeStyle = "#000";
+				ctx.stroke();
+				ctx.restore();
+			}
+			draw() {
+				const ctx = this.ctx;
+				ctx.clearRect(0, 0, this.width, this.height);
+				this.drawLine(2);
+				this.drawLine();
+				this.moveXs[0] += this.speeds[0] * this.dirs[0];
+				this.moveXs[1] += this.speeds[1] * this.dirs[1];
+				if (this.showRateLine) this.drawRateLine(); // 调试用
+			}
+			drawLine(type = 1) {
+				let rate = this.rate;
+				const color = this[`color${type}`];
+				const fun = type == 1 ? Math.sin : Math.cos;
+				let moveX = type == 1 ? this.moveXs[0] : this.moveXs[1];
+				const dir = type == 1 ? this.dirs[0] : this.dirs[1];
+				const amplitude = type == 1 ? this.amplitudes[0] : this.amplitudes[1];
+
+				let h = this.height * (1 - rate / 100);
+				const ctx = this.ctx;
+				let lingrd = ctx.createLinearGradient(0, 0, 0, this.height);
+				let step = 1 / (color.length - 1);
+				for (let i = 0; i < color.length; i++) {
+					lingrd.addColorStop(i * step, color[i]);
+				}
+				let y,
+					start = amplitude * fun(this.wavelength * moveX);
+				ctx.save();
+				ctx.beginPath();
+				ctx.moveTo(-50, h + start - 5);
+				ctx.lineTo(0, h + start - 5);
+				for (let x = 0; x < this.width; x++) {
+					y = amplitude * fun(this.wavelength * (x + moveX));
+					ctx.lineTo(x, y + h);
+				}
+				ctx.lineTo(this.width + 50, y + h - 5);
+				ctx.lineTo(this.width + 50, this.height + 5);
+				ctx.lineTo(-50, this.height + 5);
+				ctx.lineTo(-50, h + start - 5);
+				ctx.fillStyle = lingrd;
+				ctx.fill();
+			}
+		}
+	</script>
+	<script>
+		/*
+		 ******************** 以下为用法
+		 */
+		// 创建一个水球图
+		const waterPolo = new WaterPolo({
+			x: 0,
+			y: 60,
+			width: 300,
+			height: 300,
+			showRateLine: true,
+			rate: 50, // 占比
+			zIndex: 1
+		});
+		// 事件托管
+		const evtMng = new AnimationEventBus();
+		evtMng.addEvent({
+			event: waterPolo.draw.bind(waterPolo)
+		});
+		// 改变水球图完成占比
+		function rate1Change(value) {
+			waterPolo.setRate(value);
+		}
+		// 改变曲线振幅
+		function amp1Change(value) {
+			waterPolo.setAmp([value, value]);
+		}
+		// 改变曲线速度
+		function spd1Change(value) {
+			waterPolo.setSpeed([value, value]);
+		}
+		// 设置周期/频率
+		function period1Change(value) {
+			waterPolo.setPeriod(value);
+		}
+		// 设置方向
+		function dir1Change(value) {
+			waterPolo.setDir1(value);
+		}
+		function dir2Change(value) {
+			waterPolo.setDir2(value);
+		}
+
+		// 按钮添加
+		// 未指定 el 则添加到body 中
+		const btn = $("#add-btn");
+		btn.onclick = function () {
+			const waterPolo2 = new WaterPolo({
+				x: 300,
+				y: 60,
+				width: 300,
+				height: 300,
+				rate: 20, // 占比
+				period: 2,
+				zIndex: 1,
+				amplitudes: [20, 20],
+				speeds: [1, 1],
+				colors: [
+					["#f00", "#0f0"],
+					["#a00", "#0a0"]
+				]
+			});
+			evtMng.addEvent({
+				event: waterPolo2.draw.bind(waterPolo2)
+			});
+		};
+
+		// div添加
+		// 指定 el => div
+		const divDom = $(".div1");
+		divDom.onclick = function () {
+			const width = this.clientWidth;
+			const waterPolo3 = new WaterPolo({
+				x: 0,
+				y: 0,
+				el: this,
+				width: this.clientWidth,
+				height: this.clientHeight,
+				rate: 85, // 占比
+				zIndex: 1,
+				amplitudes: [20, 20],
+				colors: [
+					["#f80", "#8f0"],
+					["#a50", "#5a0"]
+				]
+			});
+			evtMng.addEvent({
+				event: waterPolo3.draw.bind(waterPolo3)
+			});
+		};
+
+		// 完整动画
+		const div2Dom = $(".div2");
+		div2Dom.onclick = function () {
+			const width = this.clientWidth;
+			let rate = 0;
+			const waterPolo4 = new WaterPolo({
+				x: 0,
+				y: 0,
+				el: this,
+				width: this.clientWidth,
+				height: this.clientHeight,
+				rate: 0, // 占比
+				zIndex: 1,
+				period: 3,
+				amplitudes: [30, 30],
+				colors: [
+					["#f80", "#8f0"],
+					["#f08", "#80f"]
+				]
+			});
+			let evtid = evtMng.addEvent({
+				event: () => {
+					rate += 0.5;
+					waterPolo4.setRate(rate);
+					waterPolo4.draw();
+					if (rate > 70) {
+						let amp = 100 - rate;
+						waterPolo4.setAmp([amp, amp]);
+					}
+					if (rate >= 100) {
+						rate = 100;
+						evtMng.removeEvent(evtid);
+					}
+				}
+			});
+		};
+
+		// 使用缓动函数
+		const div3Dom = $(".div3");
+		div3Dom.onclick = function () {
+			const width = this.clientWidth;
+			let rate = 0;
+			const waterPolo5 = new WaterPolo({
+				x: 0,
+				y: 0,
+				el: this,
+				width: this.clientWidth,
+				height: this.clientHeight,
+				rate, // 占比
+				zIndex: 1,
+				period: 3,
+				amplitudes: [30, 25],
+				speeds: [1, 0.5],
+				colors: [
+					["#f80", "#8f0"],
+					["#f08", "#80f"]
+				]
+			});
+			let duration = 3000; // 总时长 单位 ms
+			let t = 0; // 当前进度 ms
+			let rateEnd = 70; // 到70% 停止
+			/*
+				stepv 单步长
+				总进度 100%
+				单步长 = 总进度 /总步长
+			*/
+			let frameCount = (duration / 1000) * 60;
+			let stepv = (rateEnd - rate) / frameCount;
+
+			// 5次方缓动曲线
+			// t当前时间；b初始值；c最终值；d总时长
+			// https://www.zhangxinxu.com/study/201612/how-to-use-tween-js.html
+			let easeOut = (t, b, c, d, a, p) => {
+				var s;
+				if (t == 0) return b;
+				if ((t /= d) == 1) return b + c;
+				if (typeof p == "undefined") p = d * 0.4;
+				if (!a || a < Math.abs(c)) {
+					a = c;
+					s = p / 4;
+				} else {
+					s = (p / (2 * Math.PI)) * Math.asin(c / a);
+				}
+				return (
+					a *
+						Math.pow(2, -10 * t) *
+						Math.sin(((t * d - s) * (2 * Math.PI)) / p) +
+					c +
+					b
+				);
+			};
+
+			let evtid = evtMng.addEvent({
+				event: () => {
+					rate = easeOut(t, 0, rateEnd, frameCount);
+					if (t <= frameCount) {
+						t++;
+						waterPolo5.setRate(rate);
+						// evtMng.removeEvent(evtid);
+					}
+					waterPolo5.draw();
+				}
+			});
+		};
+	</script>
+</html>

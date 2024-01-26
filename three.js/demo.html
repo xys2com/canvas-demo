@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		.view {
+			height: 100vh;
+			width: 100vw;
+			overflow: hidden;
+		}
+		.title {
+			width: 100vw;
+			line-height: 40px;
+			color: #fff;
+			text-align: center;
+			position: absolute;
+			z-index: 10;
+		}
+		.demo-wrap {
+			height: 100vh;
+			width: 300vh;
+			display: flex;
+			flex-wrap: nowrap;
+			transform: translateX(-100vw);
+			background: linear-gradient(
+				to right,
+				#f008 0%,
+				#0f08 33.33%,
+				#00f8 66.66%,
+				#f008 70%,
+				#0f08 80%,
+				#00f8 85%,
+				#f008 89%,
+				#0f08 92%,
+				#00f8 95%,
+				#f008 98%,
+				#0f08 100%
+			);
+			transition: all 0.3s linear;
+		}
+		.container {
+			min-height: 100vh;
+			color: #fff;
+			line-height: 100vh;
+			text-align: center;
+			min-width: 100vw;
+			font-size: 33px;
+			overflow-y: auto;
+		}
+		.block {
+			height: 100vh;
+			color: #fff;
+			line-height: 100vh;
+		}
+	</style>
+	<body>
+		<div class="view">
+			<div class="title">右滑没个底</div>
+			<div class="demo-wrap">
+				<div class="container">0</div>
+				<div class="container">1</div>
+				<div class="container">2</div>
+			</div>
+		</div>
+	</body>
+	<script>
+		// get dom
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		// 检测是否为dom
+		window.isDOM = (item) => {
+			return typeof HTMLElement === "function"
+				? item instanceof HTMLElement
+				: item &&
+						typeof item === "object" &&
+						item.nodeType === 1 &&
+						typeof item.nodeName === "string";
+		};
+		window.dom = {
+			add: (el, p) => {
+				const querys = isDOM(el) ? el : $(el);
+				if (querys.length) {
+					Array.from(querys).map((dom) => {
+						p.appendChild(dom);
+					});
+				} else {
+					p.appendChild(querys);
+				}
+			}
+		};
+
+		// 随机 min - max
+		window.$rd = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				var a = max;
+				(max = min), (min = a);
+			}
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		};
+	</script>
+	<script>
+		// 内容
+		let _arr = [0, 1, 2];
+		let defaultIndex = 1; // 默认初始位置
+
+		const wrap = $(".demo-wrap");
+
+		let startx = 0;
+		let starty = 0;
+		let endx = 0;
+		let endy = 0;
+
+		let lock = false; // 为true，wrap touch 事件无效
+		let slideXThreshold = 75; // x轴滑动有效值
+
+		let yLock = true;
+		let yLockValue = 75;
+		// - yLock为true时 y轴移动距离大于阈值，禁用x轴滑动事件；
+		// - 防止下滑内容时横向触发事件（你乐意也可关闭该功能）
+
+		const abs = Math.abs;
+		// 必要事件
+		wrap.addEventListener("touchstart", (e) => {
+			if (lock) return;
+
+			const { clientX, clientY } = e.targetTouches["0"];
+			startx = clientX;
+			starty = clientY;
+		});
+
+		// 弹性事件 （可以不要）
+		wrap.addEventListener("touchmove", (e) => {
+			if (lock) return;
+
+			const { clientX, clientY } = e.targetTouches["0"];
+			endx = clientX;
+			endy = clientY;
+			const _y = endy - starty;
+			if (yLock && abs(_y) > yLockValue) {
+				wrap.style.transform = ` translateX(${-(defaultIndex * 100)}vw)`;
+				return;
+			}
+
+			const _x = endx - startx;
+			wrap.style.transform = `translateX(calc(-${
+				defaultIndex * 100
+			}vw + ${_x}px)`;
+		});
+
+		// 必要事件
+		wrap.addEventListener("touchend", (e) => {
+			if (lock) return;
+
+			const { clientX, clientY } = e.changedTouches["0"];
+			endx = clientX;
+			endy = clientY;
+
+			const _y = endy - starty;
+			if (yLock && abs(_y) > yLockValue) return;
+
+			const _x = endx - startx;
+
+			if (_x > slideXThreshold) {
+				toggleContent(1);
+			} else if (_x < -slideXThreshold) {
+				toggleContent(2);
+			} else {
+				wrap.style.transform = ` translateX(${-(defaultIndex * 100)}vw)`;
+			}
+		});
+
+		function init() {
+			startx = 0;
+			starty = 0;
+			endx = 0;
+			endy = 0;
+		}
+
+		// 1 切换左；2切换右
+		function toggleContent(dir) {
+			lock = true;
+			init();
+			dir == 1 ? (defaultIndex -= 1) : (defaultIndex += 1);
+
+			if (defaultIndex <= 0) {
+				defaultIndex = 0;
+			}
+
+			if (defaultIndex >= _arr.length - 1) {
+				// 加载后一页内容
+				insertDom();
+			}
+			wrap.style.transform = ` translateX(${-(defaultIndex * 100)}vw)`;
+			wrap.style.width = `${_arr.length * 100}vw`;
+
+			setTimeout(() => {
+				lock = false;
+			}, 300); // 时间等于 css 中动画时间
+		}
+
+		// 请求下一页内容
+		function insertDom() {
+			const div = document.createElement("div");
+			let content = _arr.length;
+			div.classList.add(`container`);
+			div.innerHTML = `${content}-下滑请用力`;
+			insertBlock(div); // <= 你可以不要这个内容
+			wrap.appendChild(div);
+			_arr.push(++content);
+		}
+
+		// 你可以不要这个内容
+		function insertBlock(pDom) {
+			const tips = [
+				"向下，看我干嘛！",
+				"我叫你向下！",
+				"没吃饭嘛？",
+				"用力！",
+				"蜗牛都比你快！",
+				"就这速度？"
+			];
+			const num = $rd(3, 10);
+			for (let i = 0; i < num; i++) {
+				const div = document.createElement("div");
+				div.classList.add(`block`);
+				div.innerHTML =
+					i == num - 1 ? "别TM划了，没了" : tips[$rd(0, tips.length - 1)];
+				pDom.appendChild(div);
+			}
+		}
+	</script>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+			border: 1px solid #fff;
+		}
+	</style>
+	<body></body>
+	<script src="./perlin.js"></script>
+	<script>
+		// get dom
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+
+		// 随机 min - max
+		window.$rd = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				var a = max;
+				(max = min), (min = a);
+			}
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		};
+		// 检测是否为dom
+		window.isDOM = (item) => {
+			return typeof HTMLElement === "function"
+				? item instanceof HTMLElement
+				: item &&
+						typeof item === "object" &&
+						item.nodeType === 1 &&
+						typeof item.nodeName === "string";
+		};
+		window.querys = (el) => {
+			const querys = isDOM(el) ? el : $(el);
+			return querys.length ? Array.from(querys) : querys;
+		};
+		window.$dom = {
+			add: (el, p) => {
+				const doms = querys(el);
+				if (doms.length) {
+					doms.map((dom) => {
+						p.appendChild(dom);
+					});
+				} else {
+					p.appendChild(doms);
+				}
+			},
+			insertText: (el, text) => {
+				const doms = querys(el);
+				if (doms.length) {
+					doms.map((dom) => {
+						dom.innerHTML = text;
+					});
+				} else {
+					doms.innerHTML = text;
+				}
+			}
+		};
+		window.CANVAS = [];
+		window.CTXS = [];
+		window.COLOR = ["#f00", "#ff0", "#0f0", "#0ff"];
+		const WIDTH = 300;
+		const HEIGHT = 300;
+
+		// 填充文字
+		function fillText(text, ctx, color, top) {
+			ctx.save();
+			ctx.fillStyle = color;
+			ctx.font = "16px Microsoft YaHei";
+			ctx.fillText(text, 10, top);
+			ctx.restore();
+		}
+
+		// 注册canvas
+		function registerCanvas(id, name, name2) {
+			let dom = document.getElementById(id);
+			const canvas = dom ? dom : document.createElement("canvas");
+			const ctx = canvas.getContext("2d");
+			canvas.id = id;
+			canvas.width = WIDTH;
+			canvas.height = HEIGHT;
+			CANVAS.push(canvas);
+			document.body.appendChild(canvas);
+			fillText(name, ctx, "#fffd", 16);
+			fillText(name2, ctx, "#fffd", 32);
+			return {
+				canvas,
+				ctx
+			};
+		}
+
+		// 插入点位
+		function dotin(ctx, dot) {
+			ctx.save();
+			const [x, y] = dot;
+			ctx.beginPath();
+			ctx.strokeStyle = COLOR[0];
+			ctx.fillStyle = COLOR[0];
+			ctx.arc(x, y, 2, 0, 2 * Math.PI);
+			ctx.stroke();
+			ctx.fill();
+			ctx.closePath();
+			ctx.restore();
+		}
+	</script>
+	<script>
+		// 白噪点
+		function whiteNoise() {
+			const { canvas, ctx } = registerCanvas("white-noise", "白噪声");
+			let imgdata = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+			for (let i = 0; i < imgdata.data.length; i += 4) {
+				const rgba = [255, 255, 255, $rd(255)];
+				imgdata.data[i] = rgba[0];
+				imgdata.data[i + 1] = rgba[1];
+				imgdata.data[i + 2] = rgba[2];
+				imgdata.data[i + 3] = rgba[3];
+			}
+			ctx.putImageData(imgdata, 0, 0);
+		}
+		// 柏林噪点
+		/*
+        00----10----20----30
+        |                 |
+        |                 |
+        01----11----21----31
+        |                 |
+        |                 |
+        02----12----22----32
+        |                 |
+        |                 |
+        03----13----23----33
+		    */
+		// [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+		function perlinNoise() {
+			const { canvas, ctx } = registerCanvas("perlin-noise", "柏林噪声");
+			let imgdata = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			const wlen = WIDTH / 100 + 1; // 4 x轴四个顶点数
+			const hlen = HEIGHT / 100 + 1; // 4 y轴四个顶点数
+
+			let vertexA = [];
+			// 顶点随机值
+			for (let i = 1; i < wlen * hlen; i++) {
+				vertexA.push($rd(255));
+			}
+
+			// 300 * 300
+			for (let i = 0; i <= imgdata.data.length; i += 4) {
+				// 是否顶点
+				let isv = i % 120000 == 0 || (i % 120000) % 300 == 0;
+				let aIndex = Math.floor(i / 100);
+
+				// 二维中的坐标
+				const x = i % 300;
+				const y = Math.floor(i / 300);
+
+				// 晶格uv 坐标
+				let u = {};
+				u.x = x % 100;
+				u.y = Math.floor(x / 100);
+
+				const a = vertexA[u.x];
+				const b = vertexA[u.x + 1];
+				const c = vertexA[u.y * wlen];
+				const d = vertexA[u.y * wlen + 1];
+
+				imgdata.data[i] = 255;
+				imgdata.data[i + 1] = 255;
+				imgdata.data[i + 2] = 255;
+
+				if (isv) {
+					console.log(i);
+					imgdata.data[i] = 255;
+					imgdata.data[i + 1] = 0;
+					imgdata.data[i + 2] = 0;
+					imgdata.data[i + 3] = 255; //vertexA[aIndex];
+				} else {
+					imgdata.data[i + 3] = 0;
+					// const _av =
+					// 	(b - a) * u.x + a + (c - a) * u.y * (1 - u.x) + (d - b) * u.x * u.y;
+					// imgdata.data[i + 3] = _av;
+				}
+			}
+			ctx.putImageData(imgdata, 0, 0);
+		}
+
+		// perlinNoise();
+		function main() {
+			whiteNoise();
+			requestAnimationFrame(main);
+		}
+		main();
+	</script>
+</html>

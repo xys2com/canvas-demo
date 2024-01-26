@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+		<div
+			id="throttle"
+			style="width: 500px; height: 500px; border: 1px solid #000"
+		></div>
+	</body>
+	<script>
+		const $ = (el) => {
+			const els = document.querySelectorAll(el);
+			return els.length === 1 ? els[0] : Array.from(els);
+		};
+		const $isDOM = (item) => {
+			return typeof HTMLElement === "function"
+				? item instanceof HTMLElement
+				: item &&
+						typeof item === "object" &&
+						item.nodeType === 1 &&
+						typeof item.nodeName === "string";
+		};
+	</script>
+	<script>
+		// 节流
+		function throttle(cb, gap) {
+			let timer;
+			return function () {
+				let _this = this;
+				let args = arguments;
+				if (!timer)
+					timer = setTimeout(function () {
+						timer = null;
+						cb.apply(_this, args);
+					}, gap);
+			};
+		}
+
+		//
+		function mouseThrottleMove(el, cb, delay) {
+			const dom = $isDOM(el) ? el : $(el);
+			dom.addEventListener("mousemove", throttle(cb, delay));
+		}
+
+		mouseThrottleMove(
+			"#throttle",
+			(e) => {
+				const { clientX, clientY } = e;
+				console.log(clientX, clientY);
+			},
+			100
+		);
+	</script>
+</html>

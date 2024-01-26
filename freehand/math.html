@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body></body>
+	<script src="./handv0.10.js"></script>
+	<script>
+		const hands = new HandDraw({
+			x: 0,
+			y: 0,
+			width: 500,
+			height: 300,
+			zIndex: 1
+		});
+		const ctx = hands.getCtx();
+		ctx.fillStyle = "#000";
+		ctx.fillRect(0, 0, 500, 300);
+		ctx.fillStyle = "#fff";
+		// ctx.textAlign = "center";
+		ctx.textBaseline = "top";
+		ctx.font = "80px Microsoft YaHei";
+		ctx.fillText("[", 100, 60);
+		ctx.fillText("]", 188, 60);
+		ctx.font = "14px Microsoft YaHei";
+		// ctx.fillText("s1,  0,  0,  0", 120, 70);
+		// ctx.fillText("0,   s2, 0,  0", 120, 85);
+		// ctx.fillText("0,   0,  s3, 0", 120, 100);
+		// ctx.fillText("0,   0,  0,  s4", 120, 115);
+		ctx.fillText("s1,  0,  0,  0", 120, 70);
+		ctx.fillText("0,  s2,  0,  0", 120, 85);
+		ctx.fillText("0,  0,  s3,  0", 120, 100);
+		ctx.fillText("x,   y,    z,  0", 120, 115);
+	</script>
+</html>

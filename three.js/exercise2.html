@@ -23,121 +23,12 @@
 		</div>
 	</body>
 	<script src="./three.min.js"></script>
+
+	<script src="http://www.yanhuangxueyuan.com/versions/threejsR92/examples/js/controls/OrbitControls.js"></script>
+	<script src="./music.js"></script>
 	<script src="./sound.js"></script>
 	<!-- <script src="./OrbitControls.js"></script> -->
 	<script>
-		const musics = [
-			{
-				id: 0,
-				name: "海贼王 - Fight Together",
-				type: "m4a",
-				all: "Fight Together.m4a",
-				author: "安室奈美恵",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/7fqm7f1m.m4a",
-				_url: "7fqm7f1m"
-			},
-			{
-				id: 1,
-				name: "海贼王 - One day",
-				type: "m4a",
-				all: "One day.m4a",
-				author: "The ROOTLESS",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/irh3ju6q.m4a",
-				_url: "irh3ju6q"
-			},
-			{
-				id: 2,
-				name: "海贼王 - ココロのちず",
-				type: "m4a",
-				all: "ココロのちず.m4a",
-				author: "BOYSTYLE",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/pvvr1ovo.m4a",
-				_url: "pvvr1ovo"
-			},
-			{
-				id: 3,
-				name: "海贼王 - ウィーアー!",
-				type: "mp3",
-				all: "ウィーアー!.mp3",
-				author: "きただにひろし",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/2vf06m48.mp3",
-				_url: "2vf06m48"
-			},
-			{
-				id: 4,
-				name: "海贼王 - ヒカリへ",
-				type: "m4a",
-				all: "ヒカリへ.m4a",
-				author: "ザ・ベイビースターズ",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/r95f7dlg.m4a",
-				_url: "r95f7dlg"
-			},
-			{
-				id: 5,
-				name: "海贼王 - Jungle P",
-				type: "m4a",
-				all: "Jungle P.m4a",
-				author: "5050",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/882h0vno.m4a",
-				_url: "882h0vno"
-			},
-			{
-				id: 6,
-				name: "男孩别哭",
-				type: "m4a",
-				all: "男孩别哭.m4a",
-				author: "海龟先生",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/clh7n7to.m4a",
-				_url: "clh7n7to"
-			},
-			{
-				id: 7,
-				name: "穢土",
-				type: "m4a",
-				all: "穢土.m4a",
-				author: "iwamizu",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/0hq3v6ng.m4a",
-				_url: "0hq3v6ng"
-			},
-			{
-				id: 8,
-				name: "Fly Me To The Moon",
-				type: "m4a",
-				all: "Fly Me To The Moon.m4a",
-				author: "小野丽莎",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/q0ajdb1j.m4a",
-				_url: "q0ajdb1j"
-			},
-			{
-				id: 9,
-				name: "悋気",
-				type: "m4a",
-				all: "悋気.m4a",
-				author: "iwamizu",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/7342pt7o.m4a",
-				_url: "7342pt7o"
-			},
-			{
-				id: 10,
-				name: "Fish in the pool",
-				type: "m4a",
-				all: "Fish in the pool.m4a",
-				author: "ヘクとパスカル",
-				liker: 0,
-				url: "https://music-960422.oss-cn-beijing.aliyuncs.com/lo4kulog.m4a",
-				_url: "lo4kulog"
-			}
-		];
 		window.xhr = new XMLHttpRequest();
 		xhr.timeout = 30000;
 		xhr.onerror = function (error) {
@@ -167,26 +58,36 @@
 	</script>
 	<script>
 		// 长宽为1，最大高度为 12.8的立方体
-		const SIZE = 0.5;
-		const GAP = 0.1;
-		const MAXHEIGHT = 12.8;
+		const SIZE = 5;
+		const GAP = 5;
+		const MAXHEIGHT = 64;
 
 		const FFSIZE = 256;
-		const COUNT = 64;
+		const COUNT = 32;
 		const STEPNUM = FFSIZE / COUNT;
 
 		// 基础偏移
 		const oy = MAXHEIGHT / 2;
 		const ox = SIZE / 2;
 		const oz = SIZE / 2;
+		const DEMO = `
+			6———————5
+		 /|      /|
+		1————— 0  |
+		| |    |  |
+		| 7————|——4
+		|/     | /
+		2——————3
+			6———————5
+		 /|      /|
+		1————— 0  |
+		| |    |  |
+		| 7————|——4
+		|/     | /
+		2——————3
+		`;
 
-		//   p6-------p5
-		//  /|       /|
-		// p1------p0 |
-		// | |     |  |
-		// | |p7---|--|p4
-		// |/      | /
-		// p2------p3
+		// xyz 坐标点，lwh 长宽高
 		const createGeom = (x = 0, y = 0, z = 0, l = 0, w = 0, h = 0) => {
 			const p0 = [x + l, y + h, z + w];
 			const p1 = [x, y + h, z + w];
@@ -212,7 +113,7 @@
 			var faces = [
 				// 前
 				new THREE.Face3(0, 1, 2),
-				new THREE.Face3(0, 2, 3),
+				new THREE.Face3(2, 3, 0),
 				// 右
 				new THREE.Face3(0, 3, 4),
 				new THREE.Face3(0, 4, 5),
@@ -231,7 +132,21 @@
 			];
 			cubeGeom.faces = faces;
 			cubeGeom.vertices = vertices;
-			cubeGeom.computeFaceNormals();
+
+			// const normals = new Float32Array([
+			// 	...p0,
+			// 	...p1,
+			// 	...p2,
+			// 	...p3,
+			// 	...p4,
+			// 	...p5,
+			// 	...p6,
+			// 	...p7
+			// ]);
+			// const attribue = new THREE.BufferAttribute(normals, 3);
+			// geometry.attributes.normal = attribue;
+			// cubeGeom.computeFaceNormals();
+			// console.log(cubeGeom);
 			return cubeGeom;
 		};
 
@@ -239,41 +154,95 @@
       gl_FragColor.rgb = diffuseColor.rgb;
       gl_FragColor.a=diffuseColor.a*(d*.5)*.4;`;
 
-		function createMat(color) {
+		const vertexShader = `
+				varying vec3 pxPos;
+				uniform vec3 view_vector;
+				uniform float c;
+				uniform float p;
+				varying float intensity;
+				void main() {
+					pxPos = position;
+					vec3 v_normal = normalize(normalMatrix * normal);
+					vec3 v_view = normalize(normalMatrix * view_vector);
+
+					intensity = pow(c - dot(v_normal, v_view), p);
+					gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				}`;
+
+		// 透明度从上到下的渐变
+		// 梯度降幅加大 使用平方计算（pxPos.y/height）²
+		const fragmentShader = `
+				uniform vec3 targetColor;
+				uniform float height;
+				varying vec3 pxPos;
+				varying float intensity;
+				void main() {
+					vec3 glow = targetColor * intensity;
+					gl_FragColor = vec4(glow, (pxPos.y/height)*(pxPos.y/height));
+				}`;
+
+		// vertexShader 兰伯特/半兰伯特
+		const lbtVertexShader = `
+				varying vec3 pxPos;
+				uniform vec3 view_vector;
+				uniform float c;
+				uniform float p;
+				varying float intensity;
+				void main() {
+					pxPos = position;
+					vec3 v_normal = normalize(normalMatrix * normal);
+					vec3 v_view = normalize(normalMatrix * view_vector);
+
+					intensity = pow(c - dot(v_normal, v_view), p);
+					gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				}`;
+		const lbtFragmentShader = `
+				uniform vec3 targetColor;
+				uniform float height;
+				varying vec3 pxPos;
+				varying float intensity;
+				void main() {
+					vec3 glow = targetColor * intensity;
+					gl_FragColor = vec4(glow, 1);
+				}`;
+		function createMat(color, light) {
 			let c = new THREE.Color(color);
 			let shaderMaterial = new THREE.ShaderMaterial({
 				uniforms: {
 					targetColor: { value: new THREE.Vector3(c.r, c.g, c.b) },
-					height: { value: MAXHEIGHT }
+					height: { value: MAXHEIGHT },
+
+					lightDirection: {
+						value: light.getWorldDirection(new THREE.Vector3())
+					},
+					lightColor: { value: new THREE.Vector3(c.r, c.g, c.b) },
+					kd: { value: 1 },
+					halfLambert: { value: true },
+
+					view_vector: { type: "v3f", value: new THREE.Vector3(0, 0, 1) },
+					c: { type: "f", value: 0.8 },
+					p: { type: "f", value: 2.4 }
 				},
-				side: THREE.DoubleSide,
+				side: THREE.FrontSide, // FrontSide BackSide DoubleSide
 				transparent: true,
 				depthWrite: false,
-				vertexShader: `varying vec3 pxPos;
-					void main() {
-						pxPos = position;
-						gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-					}`,
-				// 透明度从上到下的渐变
-				fragmentShader: `uniform vec3 targetColor;
-				uniform float height;
-				varying vec3 pxPos;
-				void main() {
-					gl_FragColor = vec4(targetColor.xyz, (pxPos.y/height)*(pxPos.y/height));
-				}`
+				vertexShader: vertexShader,
+				fragmentShader: fragmentShader,
+				blending: THREE.AdditiveBlending
 			});
+			shaderMaterial.needsUpdate = true;
 			return shaderMaterial;
 		}
 		// 立方体类
 		class Cube {
-			constructor(x, z, i) {
+			constructor({ x, z, i }, light) {
 				// y 默认为0
 				this.height = MAXHEIGHT; //$random(MAXHEIGHT * 10) / 10;
 				this.rh = $random(1, 5) / 800;
 				this.gemo = createGeom(x + ox, 0, z + oz, SIZE, SIZE, this.height); //new THREE.BoxGeometry(SIZE, MAXHEIGHT, SIZE);
 				this.mat = createMat(
 					`hsl(${i * ((360 / COUNT) * 2)}, 50%, 50%)`,
-					this.height
+					light
 				);
 				this.cube = new THREE.Mesh(this.gemo, this.mat);
 				this.cube.receiveShadow = true;
@@ -296,44 +265,83 @@
 		renderer.setSize(WIDTH, HEIGHT); // 设置渲染器视窗大小 （canvas大小）
 		const scene = new THREE.Scene(); // 场景对象
 
-		const axis = new THREE.AxisHelper(20); // 辅助线
-		// scene.add(axis);
+		const axis = new THREE.AxisHelper(200); // 辅助线
+		scene.add(axis);
+
+		const geometry = new THREE.BoxGeometry(40, 40, 40); // 创建立方体
+		const material = new THREE.MeshStandardMaterial({
+			color: 0xffffff,
+			transparent: true, //开启透明
+			opacity: 1 //设置透明度
+		});
+		const mesh = new THREE.Mesh(geometry, material);
+		mesh.receiveShadow = true;
+		mesh.castShadow = true;
+		let _c = new THREE.Color(`hsl(${$random(360)}, 50%, 50%)`);
+		let color = new THREE.Vector3(_c.r, _c.g, _c.b);
+
+		const geometryball = new THREE.SphereGeometry(50, 64, 64);
+		const materialball = new THREE.ShaderMaterial({
+			uniforms: {
+				view_vector: { type: "v3f", value: new THREE.Vector3(0, 0, 1) },
+				c: { type: "f", value: 0.1 },
+				p: { type: "f", value: 2 },
+				targetColor: { type: "v3f", value: color }
+			},
+			transparent: true,
+			depthTest: true,
+			vertexShader,
+			fragmentShader,
+			blending: THREE.AdditiveBlending,
+			side: THREE.DoubleSide // FrontSide BackSide DoubleSide
+		});
+		materialball.needsUpdate = true;
+		const ball = new THREE.Mesh(geometryball, materialball);
+		// scene.add(ball); // 添加到场景
+
+		// scene.add(mesh); // 添加到场景
 
 		const camera = new THREE.PerspectiveCamera(70, WIDTH / HEIGHT, 1, 3000); // 相机
 		// view(2, 20, 20);
-		camera.position.set(2, 20, 10);
-		camera.lookAt({ x: 12, y: 10, z: 0 });
+		camera.position.set(100, 100, 100);
+		camera.lookAt({ x: 0, y: 0, z: 0 });
+		const controls = new THREE.OrbitControls(camera, renderer.domElement);
+		controls.update();
+
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+		directionalLight.castShadow = true;
+		directionalLight.position.set(50, 200, 50);
+		directionalLight.target = ball;
+		// directionalLight.color = new THREE.Vector3(1, 1, 1);
+		scene.add(directionalLight); //
+
 		let count = 0;
 		let Cubs = [];
 		for (let i = 0; i < COUNT; i++) {
-			let cub1 = new Cube(i * (SIZE + GAP), SIZE + GAP, i);
+			let cub1 = new Cube(
+				{ x: i * (SIZE + GAP), z: SIZE + GAP, i },
+				directionalLight
+			);
 			scene.add(cub1.cube);
 			Cubs.push(cub1);
 			count++;
 		}
 
-		const ambientLight = new THREE.AmbientLight(0xffffff, 1); // 自然光，相当于当前场景所有物体基础光照度
-		// scene.add(ambientLight);
-
-		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-		directionalLight.position.set(2, 50, 30);
-		// scene.add(directionalLight); //
-		directionalLight.castShadow = true;
-		directionalLight.shadow.camera.left = -20;
-		directionalLight.shadow.camera.right = 20;
-		// directionalLight.shadow.camera.top = -500;
-		// directionalLight.shadow.camera.bottom = 500;
 		const directionalLightHelper = new THREE.DirectionalLightHelper(
 			directionalLight
 		);
-		// scene.add(directionalLightHelper);
+		scene.add(directionalLightHelper);
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 自然光，相当于当前场景所有物体基础光照度
+		scene.add(ambientLight);
 
-		const floor = new THREE.BoxGeometry(80, 1, 80);
+		const floor = new THREE.BoxGeometry(400, 1, 400);
 		const floorMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
 		const floorMesh = new THREE.Mesh(floor, floorMat);
 		floorMesh.position.y = -1;
+		// floorMesh.position.x = 0;
 		floorMesh.receiveShadow = true;
-		scene.add(floorMesh);
+		floorMesh.castShadow = true;
+		// scene.add(floorMesh);
 
 		renderer.shadowMap.enabled = true;
 
@@ -377,9 +385,7 @@
 				if (!Init) playmusic(initItem);
 			}
 		};
-		setInterval(() => {
-			console.log(playing);
-		}, 200);
+
 		$("#play-next").onclick = next;
 		$("#play-pre").onclick = pre;
 		let volume = $("#volume");
@@ -395,7 +401,6 @@
 					() => {
 						Init = true;
 						playing = true;
-						console.log(playing);
 						animate();
 					},
 					next
@@ -406,13 +411,23 @@
 		};
 
 		function animate() {
+			const newView = camera.position.clone().sub(controls.target);
+
 			requestAnimationFrame(animate);
 			Cubs.map((obj, i) => {
 				const index = i * STEPNUM;
 				sizeData = sound.visualizer();
 				const height = (sizeData[index] / 256) * MAXHEIGHT;
 				obj.setHeight(height || 2);
+
+				const uniforms = obj.cube.material.uniforms;
+
+				uniforms.view_vector.value = newView;
 			});
+
+			const balluniforms = ball.material.uniforms;
+			balluniforms.view_vector.value = newView;
+
 			renderer.render(scene, camera);
 		}
 	</script>

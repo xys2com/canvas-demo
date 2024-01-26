@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+	<head>
+		<meta charset="gb18030" />
+		<title>正弦波</title>
+	</head>
+	<body>
+		<canvas id="canvas" width="600" height="300"></canvas>
+		<script type="text/javascript">
+			const canvas = document.getElementById("canvas"),
+				context = canvas.getContext("2d"),
+				h = canvas.height / 2,
+				k = (4 * Math.PI) / canvas.width;
+			function draw(ctx, t) {
+				let y,
+					start = (h * Math.sin(k * t)) / 2;
+				ctx.beginPath();
+				ctx.moveTo(0, h + start);
+				for (let x = 0; x < canvas.width; x++) {
+					y = (h * Math.sin(k * (x + t))) / 2;
+					ctx.lineTo(x, y + h);
+				}
+				context.stroke();
+			}
+			window.onload = function () {
+				context.lineWidth = 2;
+				context.strokeStyle = "#336699";
+				let step = 0;
+				(function drawFrame() {
+					window.requestAnimationFrame(drawFrame);
+					context.clearRect(0, 0, canvas.width, canvas.height);
+					draw(context, step);
+					step += 1;
+					if (step > canvas.width) step = 0;
+				})();
+			};
+		</script>
+	</body>
+</html>

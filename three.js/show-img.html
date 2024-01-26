@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		.container {
+			height: 600px;
+			width: 800px;
+			margin: 100px;
+			border: 1px solid #999;
+			overflow-y: auto;
+		}
+	</style>
+	<body>
+		<input type="file" name="ch" id="ch" onchange="getFile(this)" />
+		<select onchange="setRate(this)">
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+			<option value="5">5</option>
+		</select>
+		<div class="container" id="container"></div>
+	</body>
+
+	<script src="./gl-matrix.js"></script>
+	<script>
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		window.Rd = function (n, r) {
+			if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+				var a = r;
+				(r = n), (n = a);
+			}
+			return Math.floor(Math.random() * (r - n + 1)) + n;
+		};
+	</script>
+	<script>
+		let container = $("#container");
+		let canvas = document.createElement("canvas");
+		let ctx = canvas.getContext("2d");
+		let view_width = container.clientWidth;
+		let view_height = container.clientHeight;
+		let img_x, img_y, img, imgUrl, img_w, img_h, img_scale_w, img_scale_h;
+		canvas.width = view_width;
+		canvas.height = view_height;
+		let RATE = 2;
+
+		container.appendChild(canvas);
+		function getFile(ipt) {
+			let file = ipt.files[0];
+			let read = new FileReader();
+			read.readAsDataURL(file);
+			read.onload = function (e) {
+				imgUrl = this.result;
+				img = new Image();
+				img.src = imgUrl;
+				img.onload = function () {
+					showImg(img, img.width, img.height);
+				};
+			};
+		}
+		function setRate(slt) {
+			RATE = +slt.value;
+		}
+
+		function showImg(img, w, h) {
+			let width, height, x, y;
+			if (h > w) {
+				img_h = height = height = view_height;
+				img_w = width = width = (view_height / h) * w;
+			} else {
+				img_w = width = view_width;
+				img_h = height = (view_width / w) * h;
+			}
+			img_x = x = (view_width - width) / 2;
+			img_y = y = (view_height - height) / 2;
+			ctx.clearRect(0, 0, view_width, view_height);
+			// ctx.drawImage(img, x, y, width, height);
+			ctx.drawImage(img, 0, 0, w, h);
+
+			// const imgdata = ctx.getImageData(x, y, width, height);
+			const imgdata = ctx.getImageData(0, 0, w, h);
+			// settleImageData(imgdata, width, height);
+			settleImageData(imgdata, w, h);
+		}
+
+		function settleImageData(imgdata, width, height) {
+			const { data } = imgdata;
+			let dataGroup = [];
+			for (let i = 0; i < data.length; i += 4) {
+				const rgba = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+				dataGroup.push(rgba);
+			}
+			let twoDimensionData = [];
+			for (let row = 0; row < height; row++) {
+				let rowdata = [];
+				for (let col = 0; col < width; col++) {
+					const index = row * width + col;
+					rowdata.push(dataGroup[index]);
+				}
+				twoDimensionData.push(rowdata);
+			}
+			putScaleImage(twoDimensionData, width, height, 4);
+			console.log(twoDimensionData);
+		}
+
+		function putScaleImage(twoDimensionData, width, height, scale) {
+			let scaleTwoDimensionData = scaleMini(twoDimensionData, scale);
+
+			let scaleImageData = [];
+			const _cvs = document.createElement("canvas");
+			_cvs.height = height * scale;
+			_cvs.width = width * scale;
+			const _ctx = _cvs.getContext("2d");
+			let putImageObj = _ctx.createImageData(width * scale, height * scale);
+
+			for (let row = 0; row < scaleTwoDimensionData.length; row++) {
+				let rowdata = scaleTwoDimensionData[row];
+				for (let col = 0; col < rowdata.length; col++) {
+					const index = (row * width * scale + col) * 4;
+					let rgba = rowdata[col];
+					putImageObj.data[index] = rgba[0];
+					putImageObj.data[index + 1] = rgba[1];
+					putImageObj.data[index + 2] = rgba[2];
+					putImageObj.data[index + 3] = rgba[3];
+				}
+			}
+			// const data = new Uint8ClampedArray(scaleImageData);
+			// putImageObj.data = data;
+			// for(let i =0;i<putImageObj.length;i+=4) {
+			//   const item =
+			// }
+			_ctx.putImageData(putImageObj, 0, 0);
+			document.body.appendChild(_cvs);
+			ctx.drawImage(_cvs, width, 0, width, height);
+		}
+
+		// $("#container").onmousemove = throttle(function (e) {
+		// 	if (e) {
+		// 		console.log(e);
+		// 	}
+		// });
+		const testArray = [
+			[1, 2],
+			[3, 4]
+		];
+
+		// 数组等比缩放
+		function scale(list, rate) {
+			if (rate % 1 != 0) {
+				throw new Error("非整数倍率");
+				return;
+			}
+			const height = list.length;
+			const width = list[0].length;
+
+			const scaleHeight = height * rate;
+			const scaleWidth = width * rate;
+
+			const scaleArray = Array.from(
+				{ length: scaleHeight },
+				(itemy, indexy) => {
+					const row = Array.from({ length: scaleWidth }, (itemx, indexx) => {
+						// 小于 等于 [indexy][indexx] 的数组区域 用源数据填充
+						// 拉伸两倍 [0][0], [0][1], [1][0], [1][1] 全部用 [0][0]填充
+						const sourcey = Math.floor(indexy / rate);
+						const sourcex = Math.floor(indexx / rate);
+						return list[sourcey][sourcex];
+					});
+					return row;
+				}
+			);
+			return scaleArray;
+		}
+
+		// 数组等比缩放
+		function scaleMini(list, rate) {
+			if (rate % 1 != 0) throw new Error("非整数倍率");
+			return Array.from({ length: list.length * rate }, (zyh, indexy) => {
+				return Array.from({ length: list[0].length * rate }, (zyw, indexx) => {
+					return list[Math.floor(indexy / rate)][Math.floor(indexx / rate)];
+				});
+			});
+		}
+
+		function throttle(func, delay = 300) {
+			let timer = null,
+				startTime = Date.now();
+
+			return function () {
+				let curTime = Date.now(),
+					remaining = delay - (curTime - startTime),
+					context = this,
+					args = arguments;
+
+				clearTimeout(timer);
+
+				if (remaining <= 0) {
+					func.apply(context, args);
+					startTime = Date.now();
+				} else {
+					timer = setTimeout(func, remaining);
+				}
+			};
+		}
+	</script>
+</html>

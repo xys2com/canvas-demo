@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body></body>
+	<script>
+		function canvasFn(scale) {
+			let canvas = document.createElement("canvas");
+			let w = 1080;
+			let h = 1339;
+			canvas.width = w * scale;
+			canvas.height = h * scale;
+			canvas.style.width = w + "px";
+			canvas.style.height = h + "px";
+
+			let ctx = canvas.getContext("2d");
+			let imageObj = new Image();
+			imageObj.setAttribute("crossorigin", "anonymous");
+			imageObj.src = "./cat.jpg";
+			imageObj.onload = () => {
+				ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.width);
+				// ctx.font = 10 * scale + "px/1 Tahoma,Helvetica,Arial,'宋体',sans-serif";
+				// ctx.fillStyle = "#192689";
+				// ctx.fillText("零三的笔记", 10 * scale, (h - 40) * scale);
+				// ctx.fillText("https://web03.cn", 10 * scale, (h - 40 + 10) * scale);
+
+				ctx.scale(scale, scale);
+				//生成图片
+				let imgSrc = canvas.toDataURL("image/png");
+				let imgDom = document.createElement("img");
+				imgDom.className = "ctx-img-" + scale;
+				imgDom.src = imgSrc;
+				console.log(`缩放${scale}倍后质量为` + imgSrc.length);
+				document.body.appendChild(imgDom);
+			};
+		}
+	</script>
+</html>
