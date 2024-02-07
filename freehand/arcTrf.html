@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+		}
+	</style>
+	<body>
+		<canvas id="test"></canvas>
+	</body>
+	<script>
+		const canvas = document.getElementById("test");
+		const ctx = canvas.getContext("2d");
+		const WIDTH = 500;
+		const HEIGHT = 500;
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		const cir = {
+			x: 200,
+			y: 200,
+			r: 50
+		};
+		const circle = (x, y, r) => {
+			ctx.save();
+			ctx.beginPath();
+			ctx.arc(x, y, r, 0, 2 * Math.PI);
+			ctx.strokeStyle = "#fff";
+			ctx.stroke();
+			ctx.closePath();
+			ctx.restore();
+		};
+		// 画一个点
+		const dotin = (dot, name, c = "#f00") => {
+			try {
+				ctx.save();
+				ctx.beginPath();
+				ctx.moveTo(dot.x, dot.y);
+				ctx.arc(dot.x, dot.y, 3, 0, 2 * Math.PI);
+				ctx.closePath();
+				ctx.fillStyle = c;
+				const text = name || `${dot.x.toFixed(2)},${dot.y.toFixed(2)}`;
+				ctx.fill();
+				const x =
+					dot.x <= 0 ? 10 : dot.x >= WIDTH ? WIDTH - name.length * 8 : dot.x;
+				const y = dot.y <= 0 ? 10 : dot.y >= HEIGHT ? HEIGHT - 20 : dot.y;
+				ctx.fillText(text, x, y);
+				ctx.closePath();
+				ctx.restore();
+			} catch (error) {
+				console.log(error);
+				console.log(dot);
+			}
+		};
+		circle(cir.x, cir.y, cir.r);
+		// min - max 的随机数
+		const random = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				var a = max;
+				(max = min), (min = a);
+			}
+			// 有一个为小数
+			// 输出小数
+			const r = +min % 1 != 0 || +max % 1 != 0;
+			if (r) {
+				min *= 100000000;
+				max *= 100000000;
+			}
+			return (
+				(Math.floor(Math.random() * (max - min + 1)) + min) /
+				(r ? 100000000 : 1)
+			);
+		};
+		// 根据角度 取圆上的一点
+		const getPointOnCircle = (deg, cir) => {
+			var rad = deg * (Math.PI / 180);
+			var x = cir.x + cir.r * Math.cos(rad);
+			var y = cir.y + cir.r * Math.sin(rad);
+			return { x, y };
+		};
+		let dots = [];
+		const len = 8;
+		for (let i = 0; i < len; i++) {
+			const deg = (i * 360) / 8;
+			const dcir = {
+				...cir,
+				r: cir.r * 1.3333
+			};
+			const d =
+				i % 2 ? getPointOnCircle(deg, dcir) : getPointOnCircle(deg, cir);
+			let dx = random(-1.5, 1.5);
+			let dy = random(-1.5, 1.5);
+			let x = d.x + dx;
+			let y = d.y + dy;
+			dots.push({ x, y });
+		}
+		for (let i = 0; i < len; i += 2) {
+			let d1 = dots[i];
+			let d2 = dots[i + 1];
+			let d3 = i == len - 2 ? dots[0] : dots[i + 2];
+			ctx.save();
+			ctx.beginPath();
+
+			if (i == 0) {
+				ctx.moveTo(d1.x + random(-3, 3), d1.y + random(-10, 0));
+			} else ctx.moveTo(d1.x, d1.y);
+
+			if (i == len - 1)
+				ctx.quadraticCurveTo(
+					d2.x,
+					d2.y,
+					d3.x + random(-3, 3),
+					d3.y + random(0, 10)
+				);
+			else ctx.quadraticCurveTo(d2.x, d2.y, d3.x, d3.y);
+
+			ctx.strokeStyle = "#0f0";
+			ctx.stroke();
+			ctx.restore();
+		}
+	</script>
+</html>

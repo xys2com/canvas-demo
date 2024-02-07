@@ -32,73 +32,106 @@
 				y: 150
 			},
 			{
-				x: 400,
-				y: 120
+				x: 300,
+				y: 150
 			},
 			{
-				x: 450,
-				y: 240
+				x: 220,
+				y: 345
 			}
 		];
-		const lines = hands.initLinePath(path, 4);
+		const lines = hands.initLinePath({ path });
 		// 矩形1
-		let polygon = hands.createRect([50, 50, 130, 60]);
+		let polygon = hands.createRect({ position: [50, 50, 130, 60] });
 		// 矩形2
-		let polygon2 = hands.createRect([80, 80, 130, 60]);
-		// 三角形
-		let polygon3 = hands.createPolygon([
-			{
-				x: 50,
-				y: 50
-			},
-			{
-				x: 100,
-				y: 140
-			},
-			{
-				x: 0,
-				y: 100
-			}
-		]);
+		let polygon2 = hands.createRect({
+			position: [80, 80, 130, 60],
+			fillType: "none"
+		});
+		// 三角形 -2 扫描线填充
+		let polygon32 = hands.createPolygon({
+			dots: [
+				{
+					x: 350,
+					y: 250
+				},
+				{
+					x: 400,
+					y: 340
+				},
+				{
+					x: 300,
+					y: 400
+				}
+			],
+			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
+			fillDeg: 45, // 描线填充和混合填充时 扫描线偏转角
+			fillGap: 5, // 描线填充和混合填充时 扫描线间距
+			colors: { side: "#fff", line: "#f0f", fill: "#873329" }
+		});
 		// 五边形
-		let polygon4 = hands.createPolygon([
-			{
-				x: 230,
-				y: 50
-			},
-			{
-				x: 270,
-				y: 76
-			},
-			{
-				x: 250,
-				y: 113
-			},
-			{
-				x: 196,
-				y: 104
-			},
-			{
-				x: 175,
-				y: 68
-			}
-		]);
+		let polygon4 = hands.createPolygon({
+			dots: [
+				{
+					x: 230,
+					y: 50
+				},
+				{
+					x: 270,
+					y: 76
+				},
+				{
+					x: 250,
+					y: 113
+				},
+				{
+					x: 196,
+					y: 104
+				},
+				{
+					x: 175,
+					y: 68
+				}
+			]
+		});
 
+		// 圆形
+		let cir = hands.createCircle({
+			x: 200,
+			y: 300,
+			r: 50,
+			fillType: "mix", // mix 包含图形填充和描线填充 mix = fill & line
+			fillDeg: 76, // 描线填充和混合填充时 扫描线偏转角
+			fillGap: 5, // 描线填充和混合填充时 扫描线间距
+			colors: { side: "#fff", line: "#a05", fill: "#33872988" }
+		});
+		// 圆形
+		let cir2 = hands.createCircle({
+			x: 200,
+			y: 400,
+			r: 50,
+			operability: false, // 可操作
+			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
+			// fillDeg: 0, // 描线填充和混合填充时 扫描线偏转角
+			fillGap: 12, // 描线填充和混合填充时 扫描线间距
+			colors: { side: "#fff", line: "#a50", fill: "#873329" }
+		});
+		console.log(hands);
 		// scaleLine();
 		function scaleLine() {
 			let duration = 3000;
 			let t = 0;
 			let rateStart = 1;
-			let rateEnd = 2;
+			let rateVar = 1;
 			let frameCount = (duration / 1000) * 60;
 
-			const line = lines[0];
+			const line = lines;
 			let evtid = evtMng.addEvent({
 				event: () => {
 					let rate = Math.tween.Elastic.easeInOut(
 						t,
 						rateStart,
-						rateEnd,
+						rateVar,
 						frameCount
 					);
 					hands.updateLineInZoom(line, rate);
@@ -107,13 +140,37 @@
 						evtMng.removeEvent(evtid);
 					}
 					t++;
-
-					hands.clear();
 					hands.refresh();
 				}
 			});
 		}
+		scaleGraph();
+		function scaleGraph() {
+			let duration = 2000;
+			let t = 0;
+			let rateStart = 1; // 自1开始
+			let rateVar = 0.5; // 增长 .5
+			let frameCount = (duration / 1000) * 60;
 
+			const line = lines;
+			let evtid = evtMng.addEvent({
+				event: () => {
+					let rate = Math.tween.Elastic.easeInOut(
+						t,
+						rateStart,
+						rateVar,
+						frameCount
+					);
+
+					hands.updateGraphZoom(cir2, rate);
+					if (t >= frameCount) {
+						evtMng.removeEvent(evtid);
+					}
+					t++;
+					hands.refresh();
+				}
+			});
+		}
 		const canvas = hands.getCanvas();
 		// 缓存鼠标按下选中图形
 		let mousePitchGraph = null;
@@ -121,6 +178,7 @@
 		let mouseEnterGraph = null;
 		let moveStartx = 0;
 		let moveStarty = 0;
+
 		// 检测是否存在鼠标进入的图形
 		function checkMouseInGraph(e) {
 			const { clientX, clientY } = e;
@@ -141,7 +199,9 @@
 				hands.updateGraphZoom(mouseEnterGraph, 1.1);
 				hands.refresh();
 			} else if (mouseEnterGraph) {
+				// 离开某个图形，刷新canvas
 				hands.updateGraphZoom(mouseEnterGraph, 1);
+				hands.initGraphStatus(mouseEnterGraph);
 				mouseEnterGraph = null;
 				hands.refresh();
 			}
@@ -150,18 +210,25 @@
 		// 图形拖动
 		function mousePitchGraphDrag(e) {
 			// const { clientX, clientY, movementX, movementY } = e;
-			// movementX, movementY 不准确
+			// 草！movementX, movementY 不准确
 			const { clientX, clientY } = e;
 			// 手动计算移动的坐标
 			const moveX = clientX - moveStartx;
 			const moveY = clientY - moveStarty;
 
-			let isInGraph =
-				mousePitchGraph &&
-				isPointInPolygon(
+			let isInGraph = true;
+			if (mousePitchGraph.type == "polygon") {
+				isInGraph = isPointInPolygon(
 					{ x: clientX, y: clientY },
 					mousePitchGraph.zoomPoints
 				);
+			} else if (mousePitchGraph.type == "circle") {
+				const dis = distance(
+					{ x: mousePitchGraph.x, y: mousePitchGraph.y },
+					{ x: clientX, y: clientY }
+				);
+				isInGraph = dis <= cir.r;
+			}
 
 			if (!isInGraph) {
 				// 移动时鼠标超出图形区域
@@ -176,7 +243,6 @@
 				moveStartx = clientX;
 				moveStarty = clientY;
 				hands.refresh();
-				hands.refreshGraph(mousePitchGraph, ["#f00", "#f003"]);
 			}
 		}
 
@@ -206,22 +272,28 @@
 				moveStartx = clientX;
 				moveStarty = clientY;
 				mousePitchGraph = _mEG;
-				// 刷新canvas所有内容，不刷新当前 mousePitchGraph
-				hands.refresh(mousePitchGraph.id);
-				hands.refreshGraph(mousePitchGraph, ["#f00", "#f003"]);
 				mousePitchGraph.onpitch = true;
+				hands.refresh();
 				moveCheck(2);
 			}
 		});
 
 		canvas.addEventListener("mouseup", function (e) {
+			if (!mousePitchGraph) return;
 			const { clientX, clientY } = e;
-			let isInGraph =
-				mousePitchGraph &&
-				isPointInPolygon(
+			let isInGraph = true;
+			if (mousePitchGraph.type == "polygon") {
+				isInGraph = isPointInPolygon(
 					{ x: clientX, y: clientY },
 					mousePitchGraph.zoomPoints
 				);
+			} else if (mousePitchGraph.type == "circle") {
+				const dis = distance(
+					{ x: mousePitchGraph.x, y: mousePitchGraph.y },
+					{ x: clientX, y: clientY }
+				);
+				isInGraph = dis <= cir.r;
+			}
 			if (mousePitchGraph && mousePitchGraph.onpitch && isInGraph) {
 				hands.initGraphStatus(mousePitchGraph);
 				moveStartx = clientX;

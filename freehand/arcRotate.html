@@ -13,7 +13,9 @@
 	<body>
 		<canvas id="test"></canvas>
 	</body>
+	<script src="./event-manager.js"></script>
 	<script>
+		const EvtMg = new AnimationEventBus();
 		// 该步骤较复杂，但可以对圆、点、线、角度、弧度、三角函数有更多的思考
 
 		// ! 根据某个角度计算圆的切线
@@ -29,7 +31,7 @@
 		const arcCenter = { x: 200, y: 200 };
 		const arcRadius = 50;
 		let DEG = 0;
-
+		// 利用圆的方程与直线一般式计算x位置
 		function getX(x0, y0, intercept, lineslope, r) {
 			let val1 =
 				(r * r - x0 * x0 - Math.pow(intercept - y0, 2)) *
@@ -94,188 +96,73 @@
 		// 标准斜率
 		const slope = (x1, y1, x2, y2) => (y2 - y1) / (x2 - x1);
 		dotin(arcCenter, "圆心", "#0f0");
-		// 设置边际点位
-		const Sides = [
-			{
-				p1: { x: 0, y: 0 },
-				p2: { x: WIDTH, y: 0 }
-			},
-			{
-				p1: { x: WIDTH, y: 0 },
-				p2: { x: WIDTH, y: HEIGHT }
-			},
-			{
-				p1: { x: WIDTH, y: HEIGHT },
-				p2: { x: 0, y: HEIGHT }
-			},
-			{
-				p1: { x: 0, y: HEIGHT },
-				p2: { x: 0, y: 0 }
-			}
-		];
 
-		const getTangentXY = (deg) => {
-			const p = getPointOnCircle(deg);
-			dotin(p, "切点", "#ff0");
-			let lineslope = -1 / slope(p.x, p.y, arcCenter.x, arcCenter.y);
-			// 取截距
-			let intercept = p.y - lineslope * p.x;
-			// console.log(`${deg}° 的切钱方程为 y=${lineslope}x + ${intercept}`);
-			// console.log(
-			// 	`${deg}° 的切钱一般式为 ${lineslope}x - y + ${intercept} = 0`
-			// );
-			let dots = [];
-			// 判断当前deg 与那几条边相交
-
-			// 是否是垂直线
-			const isVerticalLine = Math.abs(lineslope) == Infinity;
-			// 是否平行线
-			const isParallelLine = lineslope == 0;
-			Sides.map((line) => {
-				const { x: x1, y: y1 } = line.p1;
-				const { x: x2, y: y2 } = line.p2;
-				let linedir = "";
-				let type = 0;
-				if (x1 == x2) {
-					linedir = y2 > y1 ? "right" : "left";
-				}
-				if (y1 == y2) {
-					linedir = x2 > x1 ? "top" : "bottom";
-				}
-
-				if (linedir == "top") {
-					const y = 0;
-					const x = isVerticalLine ? p.x : (y - intercept) / lineslope;
-					if (x >= 0 && x <= WIDTH) {
-						const point = { x, y };
-						dots.push({
-							point,
-							intercept,
-							lineslope,
-							tangency: p
-						});
-					}
-				}
-
-				if (linedir == "bottom") {
-					const y = HEIGHT;
-					const x = isVerticalLine ? p.x : (y - intercept) / lineslope;
-					if (x >= 0 && x <= WIDTH) {
-						const point = { x, y };
-						dots.push({
-							point,
-							intercept,
-							lineslope,
-							tangency: p
-						});
-					}
-				}
-
-				if (linedir == "left") {
-					const x = 0;
-					const y = lineslope * x + intercept;
-
-					if (y >= 0 && y <= HEIGHT) {
-						const point = { x, y };
-						dots.push({
-							point,
-							intercept,
-							lineslope,
-							tangency: p
-						});
-					}
-				}
-
-				if (linedir == "right") {
-					const x = WIDTH;
-					const y = lineslope * x + intercept;
-					if (y >= 0 && y <= HEIGHT) {
-						const point = { x, y };
-						dots.push({
-							point,
-							intercept,
-							lineslope,
-							tangency: p
-						});
-					}
-				}
-			});
-			return dots;
-		};
-
-		function getTangentLine(deg) {
-			let [{ point: dot1 }, { point: dot2, intercept, tangency, lineslope }] =
-				getTangentXY(deg);
-			const stepcount = (arcRadius * 2) / stepDep;
-
-			for (let i = 0; i < stepcount; i++) {
-				let dx = (stepDep / 2 + stepDep * i) * Math.cos((deg * Math.PI) / 180);
-				let dy = (stepDep / 2 + stepDep * i) * Math.sin((deg * Math.PI) / 180);
-				const x1 = dot1.x - dx,
-					y1 = dot1.y - dy,
-					x2 = dot2.x - dx,
-					y2 = dot2.y - dy;
-				linein({ x: x1, y: y1 }, { x: x2, y: y2 }, "#f0f");
-				let cross = getArcLineCrossDots({ x: x1, y: y1 }, { x: x2, y: y2 });
-				// console.log(cross);
-				// if (cross) {
-				// 	dotin(cross[0], ` `);
-				// 	dotin(cross[1], ` `);
-				// }
-			}
-		}
-
-		function getArcLineCrossDots(dot1, dot2) {
-			let lineslope = slope(dot1.x, dot1.y, dot2.x, dot2.y);
-			// 取截距
-			let intercept = dot1.y - lineslope * dot1.x;
-			// 如果是垂线
-			const isVerticalLine = Math.abs(intercept) == Infinity;
-			// 如果是垂线 distance 取dot1或者dot2的x - 圆心x  的绝对值
-			const distance = isVerticalLine
-				? Math.abs(dot1.x - arcCenter.x)
-				: distanceToLine(arcCenter.x, arcCenter.y, lineslope, -1, intercept);
-			if (distance < arcRadius) {
-				// 如果是垂线 x 取dot1或者dot2的x，否则根据 斜率 截距
-				let x = isVerticalLine
-					? dot1.x
-					: getX(arcCenter.x, arcCenter.y, intercept, lineslope, arcRadius);
-				// 如果是垂线 y 通过圆公式计算，否则用直线公式计算
-				let y = isVerticalLine
-					? Math.sqrt(arcRadius * arcRadius - Math.pow(x - arcCenter.x, 2)) +
-					  arcCenter.y
-					: lineslope * x + intercept;
-				// 圆心与x,y的差值，必定是另一点的x,y值
-				let vx = x - arcCenter.x;
-				let vy = y - arcCenter.y;
-
-				return [
-					{ x, y },
-					{ x: arcCenter.x - vx, y: arcCenter.y - vy }
-				];
-			}
-		}
 		function distanceToLine(x, y, A, B, C) {
 			var numerator = Math.abs(A * x + B * y + C);
 			var denominator = Math.sqrt(A * A + B * B);
 			var distance = numerator / denominator;
 			return distance;
 		}
+		function getCrossLine(deg) {
+			const tangencyDot = getPointOnCircle(deg);
+			// dotin(tangencyDot, "切点", "#ff0");
+			// const revDot = getCircleReverseDot(tangencyDot);
+			// const revDotx = getCircleReverseDot(tangencyDot, "x");
+			// const revDoty = getCircleReverseDot(tangencyDot, "y");
+			// dotin(revDotx, "切点-反点x", "#ff0");
+			// dotin(revDoty, "切点-反点y", "#ff0");
+			// dotin(revDot, "切点-反点", "#f0f5");
+
+			const diameter = arcRadius * 2;
+			const count = Math.floor(diameter / stepDep);
+			const stepDeg = 180 / count;
+			let dots = [];
+			for (let i = 0; i <= count; i++) {
+				let td = getPointOnCircle(deg + stepDeg * i);
+				dotin(td, ` `, "#ff0");
+				dots.push(td);
+			}
+			if (dots.length % 2 != 0) {
+				const index = (dots.length - 1) / 2;
+				dots.splice(index, 1);
+			}
+			let lines = [];
+			let idxs = dots.length / 2;
+			for (let i = 0; i < idxs; i++) {
+				let d1 = dots[i];
+				let d2 = dots[dots.length - 1 - i];
+				lines.push([d1.x, d1.y, d2.x, d2.y]);
+			}
+			console.log(lines);
+			lines.map((line) => {
+				const [x1, y1, x2, y2] = line;
+				linein({ x: x1, y: y1 }, { x: x2, y: y2 });
+			});
+		}
+		function getCircleReverseDot({ x, y }, type = "none") {
+			let vx = x - arcCenter.x;
+			let vy = y - arcCenter.y;
+
+			return type == "x"
+				? { x: arcCenter.x - vx, y }
+				: type == "y"
+				? { x, y: arcCenter.y - vy }
+				: { x: arcCenter.x - vx, y: arcCenter.y - vy };
+		}
+		main(45);
 		function main(deg) {
+			DEG += 1;
+			let _deg = deg || DEG % 360;
 			ctx.clearRect(0, 0, WIDTH, HEIGHT);
-			// dotin(arcCenter);
 			circle(arcCenter.x, arcCenter.y, arcRadius);
 			ctx.save();
-			ctx.clip();
-			getTangentLine(deg);
+			// ctx.clip();
+			getCrossLine(_deg);
 			ctx.restore();
 		}
-		main(90);
 
-		// setInterval(() => {
-		// 	DEG += 1;
-		// 	let _deg = DEG % 360;
-		// 	main(_deg);
-		// }, 16.66);
+		// let evtid = EvtMg.addEvent({
+		// 	event: main
+		// });
 	</script>
 </html>

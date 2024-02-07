@@ -1,20 +1,46 @@
+const _requestAnimationFrame = (() => {
+	return (
+		window.requestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		window.oRequestAnimationFrame ||
+		window.msRequestAnimationFrame ||
+		function (t) {
+			window.setTimeout(t, 1e3 / 60);
+		}
+	);
+})();
+const _cancelAnimationFrame = (() => {
+	return (
+		window.cancelAnimationFrame ||
+		window.webkitCancelAnimationFrame ||
+		window.mozCancelAnimationFrame ||
+		window.oCancelAnimationFrame ||
+		window.msCancelAnimationFrame ||
+		function (cb) {
+			window.clearTimeout(cb);
+		}
+	);
+})();
 class AnimationEventBus {
 	constructor() {
 		this.eventBus = [];
 		this.run = false;
 		this.anm = null;
+		this.requestAnimationFrame = _requestAnimationFrame.bind(window);
+		this.cancelAnimationFrame = _cancelAnimationFrame.bind(window);
 	}
 	// 开始事件循环
 	eventBegin() {
 		if (this.run) return;
 		this.run = true;
-		this.anm = window.requestAnimationFrame(this.loopevent.bind(this));
+		this.anm = this.requestAnimationFrame(this.loopevent.bind(this));
 	}
 	// 结束事件循环
 	eventEnd() {
 		if (!this.run) return;
 		this.run = false;
-		window.cancelAnimationFrame(this.anm);
+		this.cancelAnimationFrame(this.anm);
 		this.anm = null;
 	}
 	// 添加循环事件
@@ -42,6 +68,6 @@ class AnimationEventBus {
 			const params = evt.params;
 			event(...params);
 		});
-		if (this.run) window.requestAnimationFrame(this.loopevent.bind(this));
+		if (this.run) this.requestAnimationFrame(this.loopevent.bind(this));
 	}
 }
