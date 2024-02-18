@@ -10,7 +10,7 @@
 // min - max 的随机数
 const random = function (min, max) {
 	if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
-		var a = max;
+		let a = max;
 		(max = min), (min = a);
 	}
 	// 有一个为小数
@@ -31,32 +31,29 @@ const isPointInPolygon = (point, polygon, log) => {
 	//下述代码来源：http://paulbourke.net/geometry/insidepoly/，进行了部分修改
 	//基本思想是利用射线法，计算射线与多边形各边的交点，如果是偶数，则点在多边形外，否则
 	//在多边形内。还会考虑一些特殊情况，如点在多边形顶点上，点在多边形边上等特殊情况。
-
-	var N = polygon.length;
-	var boundOrVertex = true; // 如果点位于多边形的顶点或边上，也算做点在多边形内，直接返回true
-	var intersectCount = 0; // 与图形边界的交点个数
-	var precision = 2e-10; // 浮点类型计算时候与0比较时候的容差
-	var p1, p2; // 两个临近点
-	var p = point; //测试点
+	if (!polygon || !point) return false;
+	let N = polygon.length;
+	let boundOrVertex = true; // 如果点位于多边形的顶点或边上，也算做点在多边形内，直接返回true
+	let intersectCount = 0; // 与图形边界的交点个数
+	let precision = 2e-10; // 浮点类型计算时候与0比较时候的容差
+	let p1, p2; // 两个临近点
+	let p = point; //测试点
 
 	p1 = polygon[0];
-	for (var i = 1; i <= N; ++i) {
+	for (let i = 1; i <= N; ++i) {
 		if (p.x == p1.x && p.y == p1.y) {
 			return boundOrVertex;
 		}
-
 		p2 = polygon[i % N];
 		if (p.y < Math.min(p1.y, p2.y) || p.y > Math.max(p1.y, p2.y)) {
 			p1 = p2;
 			continue;
 		}
-
 		if (p.y > Math.min(p1.y, p2.y) && p.y < Math.max(p1.y, p2.y)) {
 			if (p.x <= Math.max(p1.x, p2.x)) {
 				if (p1.y == p2.y && p.x >= Math.min(p1.x, p2.x)) {
 					return boundOrVertex;
 				}
-
 				if (p1.x == p2.x) {
 					if (p1.x == p.x) {
 						return boundOrVertex;
@@ -64,11 +61,10 @@ const isPointInPolygon = (point, polygon, log) => {
 						++intersectCount;
 					}
 				} else {
-					var xinters = ((p.y - p1.y) * (p2.x - p1.x)) / (p2.y - p1.y) + p1.x;
+					let xinters = ((p.y - p1.y) * (p2.x - p1.x)) / (p2.y - p1.y) + p1.x;
 					if (Math.abs(p.x - xinters) < precision) {
 						return boundOrVertex;
 					}
-
 					if (p.x < xinters) {
 						++intersectCount;
 					}
@@ -76,7 +72,7 @@ const isPointInPolygon = (point, polygon, log) => {
 			}
 		} else {
 			if (p.y == p2.y && p.x <= p2.x) {
-				var p3 = polygon[(i + 1) % N];
+				let p3 = polygon[(i + 1) % N];
 				if (p.y >= Math.min(p1.y, p3.y) && p.y <= Math.max(p1.y, p3.y)) {
 					++intersectCount;
 				} else {
@@ -95,6 +91,58 @@ const isPointInPolygon = (point, polygon, log) => {
 		return true;
 	}
 };
+function multiply(out, a, b) {
+	let a00 = a[0],
+		a01 = a[1],
+		a02 = a[2],
+		a03 = a[3];
+	let a10 = a[4],
+		a11 = a[5],
+		a12 = a[6],
+		a13 = a[7];
+	let a20 = a[8],
+		a21 = a[9],
+		a22 = a[10],
+		a23 = a[11];
+	let a30 = a[12],
+		a31 = a[13],
+		a32 = a[14],
+		a33 = a[15];
+
+	let b0 = b[0],
+		b1 = b[1],
+		b2 = b[2],
+		b3 = b[3];
+	out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+	out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+	out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+	out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+	b0 = b[4];
+	b1 = b[5];
+	b2 = b[6];
+	b3 = b[7];
+	out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+	out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+	out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+	out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+	b0 = b[8];
+	b1 = b[9];
+	b2 = b[10];
+	b3 = b[11];
+	out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+	out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+	out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+	out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+	b0 = b[12];
+	b1 = b[13];
+	b2 = b[14];
+	b3 = b[15];
+	out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+	out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+	out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+	out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+	return out;
+}
 
 // 点距
 const distance = (d1, d2) =>
@@ -108,10 +156,10 @@ const slope = (x1, y1, x2, y2) => (y2 - y1) / (x2 - x1);
 
 function calculateIntersection(a, b, c, d) {
 	// 三角形abc 面积的2倍
-	var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
+	let area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
 
 	// 三角形abd 面积的2倍
-	var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
+	let area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
 
 	// 面积符号相同则两点在线段同侧,不相交 (对点在线段上的情况,本例当作不相交处理);
 	if (area_abc * area_abd >= 0) {
@@ -119,17 +167,17 @@ function calculateIntersection(a, b, c, d) {
 	}
 
 	// 三角形cda 面积的2倍
-	var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
+	let area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
 	// 三角形cdb 面积的2倍
 	// 不需要再用公式计算面积,而是通过已知的三个面积加减得出.
-	var area_cdb = area_cda + area_abc - area_abd;
+	let area_cdb = area_cda + area_abc - area_abd;
 	if (area_cda * area_cdb >= 0) {
 		return false;
 	}
 
 	//计算交点坐标
-	var t = area_cda / (area_abd - area_abc);
-	var dx = t * (b.x - a.x),
+	let t = area_cda / (area_abd - area_abc);
+	let dx = t * (b.x - a.x),
 		dy = t * (b.y - a.y);
 	return { x: a.x + dx, y: a.y + dy };
 }
@@ -164,40 +212,6 @@ function throttle(cb, gap) {
 			}, gap);
 	};
 }
-
-const DOMS = {
-	add: (el, p) => {
-		p = p ? p : document.body;
-		const doms = $isDOM(el) ? el : $(el);
-		if (doms && doms.length) {
-			doms.map((dom) => {
-				p.appendChild(dom);
-			});
-		} else if (doms) {
-			p.appendChild(doms);
-		}
-	},
-	del: (el) => {
-		const doms = $isDOM(el) ? el : $(el);
-		if (doms && doms.length) {
-			doms.map((dom) => {
-				const p = dom.parentNode ? dom.parentNode : document.body;
-				p.removeChild(dom);
-			});
-		} else if (doms) {
-			const p = doms.parentNode ? doms.parentNode : document.body;
-			p.removeChild(doms);
-		}
-	},
-	insertText: (el, text) => {
-		const doms = $isDOM(el) ? el : $(el);
-		if (doms && doms.length) {
-			doms.map((dom) => {
-				dom.innerHTML = text;
-			});
-		} else if (doms) doms.innerHTML = text;
-	}
-};
 
 class HandDraw {
 	constructor(options) {
@@ -417,7 +431,7 @@ const COMMON = {
 		const dot3 = [0, 0, 1, 0];
 		const dot4 = [targetx, targety, 0, 1];
 		const target = new Float32Array([...dot1, ...dot2, ...dot3, ...dot4]);
-		const now = glMatrix.mat4.multiply(out, target, original);
+		const now = multiply(out, target, original);
 
 		if (onlyPoint) {
 			let gx, gy;
@@ -523,9 +537,9 @@ const COMMON = {
 	// 计算距离 点与直线一般式距离
 	// xy 点位置，直线：Ax + By + C = 0
 	distanceToLine(x, y, A, B, C) {
-		var numerator = Math.abs(A * x + B * y + C);
-		var denominator = Math.sqrt(A * A + B * B);
-		var distance = numerator / denominator;
+		let numerator = Math.abs(A * x + B * y + C);
+		let denominator = Math.sqrt(A * A + B * B);
+		let distance = numerator / denominator;
 		return distance;
 	}
 };
@@ -557,7 +571,7 @@ const LINE = {
 		ctx.beginPath();
 		ctx.moveTo(_x1, _y1);
 		ctx.quadraticCurveTo(_x2, _y2, _x3, _y3);
-		ctx.strokeStyle = color || this.this.colors.side;
+		ctx.strokeStyle = color || this.colors.side;
 		ctx.stroke();
 		ctx.restore();
 	},
@@ -570,7 +584,7 @@ const LINE = {
 		ctx.beginPath();
 		ctx.moveTo(_x1, _y1);
 		ctx.bezierCurveTo(_x2, _y2, _x3, _y3, _x4, _y4);
-		ctx.strokeStyle = color || this.this.colors.side;
+		ctx.strokeStyle = color || this.colors.side;
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
@@ -638,7 +652,7 @@ const LINE = {
 							p2,
 							offset,
 							color: color || this.colors.line,
-							double,
+							double: options.hasOwnProperty("double") ? double : true,
 							context
 						});
 						this.lines.push(line);
@@ -649,7 +663,7 @@ const LINE = {
 							p2,
 							offset,
 							color: color || this.colors.line,
-							double,
+							double: options.hasOwnProperty("double") ? double : true,
 							lineType,
 							context
 						});
@@ -814,6 +828,7 @@ const GRAPH = {
 		graph.crossInit = false;
 		graph.width = w;
 		graph.height = h;
+		graph.double = options.hasOwnProperty("double") ? double : true;
 		graph.colors = {
 			...this.colors,
 			...colors
@@ -830,7 +845,7 @@ const GRAPH = {
 			offset,
 			color: graph.colors.side,
 			type: "polygon",
-			double,
+			double: graph.double,
 			id: _id
 		});
 		return graph;
@@ -1056,7 +1071,7 @@ const GRAPH = {
 						offset: 2,
 						color,
 						type: graph.type,
-						double: true,
+						double: graph.hasOwnProperty("double") ? graph.double : true,
 						id: graph.id,
 						lineType: "fill"
 					});
@@ -1230,9 +1245,9 @@ const GRAPH = {
 const CIRCLE = {
 	// 根据角度 取圆上的一点
 	getPointOnCircle(deg, circle) {
-		var rad = deg * (Math.PI / 180);
-		var x = circle.x + circle.r * Math.cos(rad);
-		var y = circle.y + circle.r * Math.sin(rad);
+		let rad = deg * (Math.PI / 180);
+		let x = circle.x + circle.r * Math.cos(rad);
+		let y = circle.y + circle.r * Math.sin(rad);
 		return { x, y };
 	},
 	createCircle(options, context) {
@@ -1271,13 +1286,14 @@ const CIRCLE = {
 		fillGap = fillGap <= 0 ? 1 : fillGap;
 		graph.fillGap = ["line", "mix"].includes(fillType) ? fillGap : 0;
 		graph.crossInit = false;
+		graph.double = options.hasOwnProperty("double") ? double : true;
 		let _x = x + random(-2, 2);
 		let _y = y + random(-2, 2);
 		const points = this.calculateCirDots(_x, _y, r);
 		graph.points = [];
 		graph.points.push(...points);
 		let len = 8;
-		if (double) {
+		if (graph.double) {
 			let __x = x + random(-2, 2);
 			let __y = y + random(-2, 2);
 			const points = this.calculateCirDots(__x, __y, r);
@@ -1300,7 +1316,7 @@ const CIRCLE = {
 		const len = points.length;
 		const ctx = cir.context;
 		const { startX, startY, endX, endY } = cir.zoomOffset || cir.offset;
-		let colors = cir.colors || [];
+
 		this.fillPolygon(cir);
 		for (let i = 0; i < len; i += 2) {
 			let d1 = points[i];
@@ -1342,6 +1358,7 @@ const CIRCLE = {
 			(1 + lineslope * lineslope);
 		return x;
 	},
+	// 获得圆与线的交点
 	getArcLineCrossDots(arc, dot1, dot2) {
 		let lineslope = slope(dot1.x, dot1.y, dot2.x, dot2.y);
 		// 取截距

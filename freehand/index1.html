@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Document</title>
+		<title>Scrip hand v0.12</title>
 	</head>
 	<style>
 		canvas {
@@ -12,9 +12,8 @@
 	</style>
 	<body></body>
 	<script src="./tween.js"></script>
-	<script src="./gl-matrix.js"></script>
 	<script src="./event-manager.js"></script>
-	<script src="./handv0.12.js"></script>
+	<script src="./handv0.12.min.js"></script>
 	<script>
 		const hands = new HandDraw({
 			x: 0,
@@ -28,68 +27,75 @@
 		const ctx = hands.getCtx();
 		const path = [
 			{
-				x: 100,
+				x: 200,
 				y: 150
 			},
 			{
-				x: 300,
+				x: 400,
 				y: 150
 			},
 			{
-				x: 220,
+				x: 320,
 				y: 345
 			}
 		];
-		const lines = hands.initLinePath({ path });
+		const lines = hands.initLinePath({
+			path,
+			double: false // 边线单线
+		});
 		// 矩形1
 		let polygon = hands.createRect({ position: [50, 50, 130, 60] });
 		// 矩形2
 		let polygon2 = hands.createRect({
-			position: [80, 80, 130, 60],
-			fillType: "none"
+			position: [50, 120, 130, 60],
+			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
+			fillDeg: 68, // 描线填充和混合填充时 扫描线偏转角
+			fillGap: 12, // 描线填充和混合填充时 扫描线间距
+			colors: { side: "#fff", line: "#f0f", fill: "#873329" }
 		});
 		// 三角形 -2 扫描线填充
 		let polygon32 = hands.createPolygon({
 			dots: [
 				{
-					x: 350,
-					y: 250
+					x: 120,
+					y: 500
 				},
 				{
-					x: 400,
-					y: 340
+					x: 170,
+					y: 590
 				},
 				{
-					x: 300,
-					y: 400
+					x: 70,
+					y: 650
 				}
 			],
+			double: false, // 边线单线
 			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
 			fillDeg: 45, // 描线填充和混合填充时 扫描线偏转角
-			fillGap: 5, // 描线填充和混合填充时 扫描线间距
+			fillGap: 10, // 描线填充和混合填充时 扫描线间距
 			colors: { side: "#fff", line: "#f0f", fill: "#873329" }
 		});
 		// 五边形
 		let polygon4 = hands.createPolygon({
 			dots: [
 				{
-					x: 230,
+					x: 250,
 					y: 50
 				},
 				{
-					x: 270,
+					x: 290,
 					y: 76
 				},
 				{
-					x: 250,
+					x: 270,
 					y: 113
 				},
 				{
-					x: 196,
+					x: 220,
 					y: 104
 				},
 				{
-					x: 175,
+					x: 200,
 					y: 68
 				}
 			]
@@ -97,9 +103,10 @@
 
 		// 圆形
 		let cir = hands.createCircle({
-			x: 200,
-			y: 300,
+			x: 120,
+			y: 260,
 			r: 50,
+			double: false, // 边线单线
 			fillType: "mix", // mix 包含图形填充和描线填充 mix = fill & line
 			fillDeg: 76, // 描线填充和混合填充时 扫描线偏转角
 			fillGap: 5, // 描线填充和混合填充时 扫描线间距
@@ -107,13 +114,14 @@
 		});
 		// 圆形
 		let cir2 = hands.createCircle({
-			x: 200,
+			x: 120,
 			y: 400,
 			r: 50,
+			double: false, // 边线单线
 			operability: false, // 可操作
 			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
 			// fillDeg: 0, // 描线填充和混合填充时 扫描线偏转角
-			fillGap: 12, // 描线填充和混合填充时 扫描线间距
+			fillGap: 5, // 描线填充和混合填充时 扫描线间距
 			colors: { side: "#fff", line: "#a50", fill: "#873329" }
 		});
 		console.log(hands);
