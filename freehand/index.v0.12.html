@@ -8,19 +8,24 @@
 	<style>
 		canvas {
 			background: #000;
+			color: #00eeffab;
 		}
 	</style>
 	<body></body>
 	<script src="./tween.js"></script>
 	<script src="./event-manager.js"></script>
-	<script src="./handv0.12.min.js"></script>
+	<script src="./handv0.12.js"></script>
 	<script>
 		const hands = new HandDraw({
 			x: 0,
 			y: 0,
 			width: 1920,
 			height: 800,
-			lineColor: "#fff",
+			colors: {
+				side: "#fff",
+				fill: "#00eeff66",
+				line: "#c678dd"
+			},
 			zIndex: 1
 		});
 		const evtMng = new AnimationEventBus();
@@ -41,7 +46,7 @@
 		];
 		const lines = hands.initLinePath({
 			path,
-			double: false // 边线单线
+			double: true // 边线单线
 		});
 		// 矩形1
 		let polygon = hands.createRect({ position: [50, 50, 130, 60] });
@@ -50,8 +55,8 @@
 			position: [50, 120, 130, 60],
 			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
 			fillDeg: 68, // 描线填充和混合填充时 扫描线偏转角
-			fillGap: 12, // 描线填充和混合填充时 扫描线间距
-			colors: { side: "#fff", line: "#f0f", fill: "#873329" }
+			fillGap: 12 // 描线填充和混合填充时 扫描线间距
+			// colors: { side: "#fff", line: "#f0f", fill: "#873329" }
 		});
 		// 三角形 -2 扫描线填充
 		let polygon32 = hands.createPolygon({
@@ -72,8 +77,8 @@
 			double: false, // 边线单线
 			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
 			fillDeg: 45, // 描线填充和混合填充时 扫描线偏转角
-			fillGap: 10, // 描线填充和混合填充时 扫描线间距
-			colors: { side: "#fff", line: "#f0f", fill: "#873329" }
+			fillGap: 10 // 描线填充和混合填充时 扫描线间距
+			// colors: { side: "#fff", line: "#f0f", fill: "#873329" }
 		});
 		// 五边形
 		let polygon4 = hands.createPolygon({
@@ -106,11 +111,11 @@
 			x: 120,
 			y: 260,
 			r: 50,
-			double: false, // 边线单线
+			double: true, // 边线单线
 			fillType: "mix", // mix 包含图形填充和描线填充 mix = fill & line
 			fillDeg: 76, // 描线填充和混合填充时 扫描线偏转角
-			fillGap: 5, // 描线填充和混合填充时 扫描线间距
-			colors: { side: "#fff", line: "#a05", fill: "#33872988" }
+			fillGap: 10 // 描线填充和混合填充时 扫描线间距
+			// colors: { side: "#fff", line: "#a05", fill: "#0066fe33" }
 		});
 		// 圆形
 		let cir2 = hands.createCircle({
@@ -121,8 +126,8 @@
 			operability: false, // 可操作
 			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
 			// fillDeg: 0, // 描线填充和混合填充时 扫描线偏转角
-			fillGap: 5, // 描线填充和混合填充时 扫描线间距
-			colors: { side: "#fff", line: "#a50", fill: "#873329" }
+			fillGap: 8 // 描线填充和混合填充时 扫描线间距
+			// colors: { side: "#fff", line: "#a50", fill: "#873329" }
 		});
 		console.log(hands);
 		// scaleLine();
@@ -152,9 +157,30 @@
 				}
 			});
 		}
+		changeRectColor();
+		function changeRectColor() {
+			const rect = cir;
+			let colorSide = random(0, 360);
+			let colorLine = random(0, 360);
+			let colorFill = random(0, 360);
+			let lineColor = random(0, 360);
+			let evtid = evtMng.addEvent({
+				event: () => {
+					colorLine = (colorLine + random(-5, 0)) % 360;
+					colorSide = (colorSide + random(0, 5)) % 360;
+					colorFill = (colorFill + 1) % 360;
+					lineColor = (lineColor + 30) % 360;
+					hands.setGraphLinesColor(`hsl(${colorLine}, 50%, 50%)`, rect);
+					hands.setGraphSideColor(`hsl(${colorSide}, 50%, 50%)`, rect);
+					hands.setGraphFillColor(`hsl(${colorFill}, 50%, 50%)`, rect);
+					hands.setLinesColor(`hsl(${colorFill}, 50%, 50%)`);
+					hands.refresh();
+				}
+			});
+		}
 		scaleGraph();
 		function scaleGraph() {
-			let duration = 2000;
+			let duration = 3000;
 			let t = 0;
 			let rateStart = 1; // 自1开始
 			let rateVar = 0.5; // 增长 .5

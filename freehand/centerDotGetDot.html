@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+		<canvas id="test"></canvas>
+	</body>
+	<script>
+		function getPointOnCircle(deg, circle) {
+			let rad = deg * (Math.PI / 180);
+			let x = circle.x + circle.r * Math.cos(rad);
+			let y = circle.y + circle.r * Math.sin(rad);
+			return { x, y };
+		}
+		// 点距
+		const distance = (d1, d2) =>
+			Math.sqrt((d2.x - d1.x) * (d2.x - d1.x) + (d2.y - d1.y) * (d2.y - d1.y));
+
+		const canvas = document.getElementById("test");
+		const ctx = canvas.getContext("2d");
+		const WIDTH = 500;
+		const HEIGHT = 500;
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		const x = 50,
+			y = 50,
+			w = 100,
+			h = 100;
+		ctx.save();
+		ctx.strokeStyle = "#f00";
+		ctx.strokeRect(x, y, w, h);
+
+		const cx = x + w / 2,
+			cy = y + h / 2;
+		// 画一个点
+		const dotin = (dot, name, c = "#f00") => {
+			try {
+				ctx.save();
+				ctx.beginPath();
+				ctx.moveTo(dot.x, dot.y);
+				ctx.arc(dot.x, dot.y, 2, 0, 2 * Math.PI);
+				ctx.closePath();
+				ctx.fillStyle = c;
+				const text = name || `${dot.x.toFixed(2)},${dot.y.toFixed(2)}`;
+				ctx.fill();
+				const x =
+					dot.x <= 0 ? 10 : dot.x >= WIDTH ? WIDTH - name.length * 8 : dot.x;
+				const y = dot.y <= 0 ? 10 : dot.y >= HEIGHT ? HEIGHT - 20 : dot.y;
+				ctx.fillText(text, x, y);
+				ctx.closePath();
+				ctx.restore();
+			} catch (error) {
+				console.log(error);
+				console.log(dot);
+			}
+		};
+		function eachGetDot(deg) {
+			const dots = [
+				{
+					x,
+					y
+				}
+			];
+			dots.map((dot, i) => {
+				centerGetDegDot(deg, { x: cx, y: cy }, dot);
+			});
+		}
+		let deg = 0;
+		setInterval(() => {
+			eachGetDot(deg);
+			deg++;
+		}, 16);
+
+		function centerGetDegDot(deg, center, dot) {
+			const cir = {
+				x: cx,
+				y: cy,
+				r: distance({ x: dot.x, y: dot.y }, { x: cx, y: cy })
+			};
+			let sdeg = Math.atan2(cy - dot.y, cx - dot.x) * (180 / Math.PI);
+			sdeg = (sdeg < 0 ? 360 + sdeg : sdeg) + 180 + deg;
+			let index = Math.floor(deg / 360);
+			const rotateDot = getPointOnCircle(sdeg, cir);
+			dotin(rotateDot, ` `, `hsl(${deg}, 100%, 50%)`);
+		}
+	</script>
+</html>

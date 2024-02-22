@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		*,
+		*::before,
+		*::after {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+
+		canvas {
+			display: block;
+		}
+
+		.rotating,
+		.rotating div {
+			cursor: grabbing;
+		}
+	</style>
+	<body>
+		<canvas id="app"></canvas>
+	</body>
+	<script src="./gl-matrix.js"></script>
+	<script>
+		const pageWidth = document.documentElement.clientWidth;
+		const pageHeight = document.documentElement.clientHeight;
+		const $app = document.querySelector("#app");
+		const ctx = $app.getContext("2d");
+		$app.width = pageWidth;
+		$app.height = pageHeight;
+		const width = 200;
+		const height = 200;
+		const cx = pageWidth / 2;
+		const cy = pageHeight / 2;
+		const x = cx - width / 2;
+		const y = cy - height / 2;
+		// 原点坐标
+		const origin = [cx, cy];
+		// 当前矩阵
+		let currentMatrix = new Float32Array([
+			1,
+			0,
+			0,
+			0,
+			0,
+			1,
+			0,
+			0,
+			0,
+			0,
+			1,
+			0,
+			origin[0],
+			origin[1],
+			0,
+			1
+		]);
+
+		// 初次渲染
+		render();
+		rt(30);
+		function rt(deg) {
+			let angle = (deg * Math.PI) / 180;
+			// 旋转矩阵
+			const rotateMatrix = new Float32Array([
+				Math.cos(angle),
+				Math.sin(angle),
+				0,
+				0,
+				-Math.sin(angle),
+				Math.cos(angle),
+				0,
+				0,
+				0,
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+				1
+			]);
+			console.log(currentMatrix);
+			console.log(glMatrix.mat4.create());
+			// 把当前渲染矩阵根据旋转矩阵，进行矩阵变换，得到画布的新渲染矩阵
+			currentMatrix = glMatrix.mat4.multiply(
+				glMatrix.mat4.create(),
+				currentMatrix,
+				rotateMatrix
+			);
+			console.log(currentMatrix);
+			console.log("\n\n");
+			render();
+		}
+		/**
+		 * 渲染视图
+		 * @param {MouseEvent} e 鼠标对象
+		 */
+		function render(e) {
+			// 清空画布内容
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+			ctx.save();
+
+			// 设置线段厚度，防止在高分屏下线段发虚的问题
+			ctx.lineWidth = window.devicePixelRatio;
+
+			// 设置变换矩阵
+			console.log(
+				currentMatrix[0],
+				currentMatrix[4],
+				currentMatrix[1],
+				currentMatrix[5],
+				currentMatrix[12],
+				currentMatrix[13]
+			);
+			ctx.save();
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x + width, y);
+			ctx.lineTo(x + width, y + height);
+			ctx.lineTo(x, y + height);
+			ctx.lineTo(x, y);
+			ctx.strokeStyle = "#f00";
+			ctx.stroke();
+			ctx.restore();
+			ctx.save();
+			// 绘制矩形
+			ctx.setTransform(
+				currentMatrix[0],
+				currentMatrix[4],
+				currentMatrix[1],
+				currentMatrix[5],
+				currentMatrix[12],
+				currentMatrix[13]
+			);
+			ctx.strokeStyle = "#f0f";
+			ctx.strokeRect(-width / 2, -height / 2, width, height);
+			ctx.restore();
+
+			// 设置圆圈的边框颜色和填充色
+			ctx.fillStyle = "rgb(255, 255, 255)";
+			ctx.strokeStyle = "rgb(6, 123, 239)";
+
+			// 绘制矩形上边框中间的蓝色圆圈
+			ctx.beginPath();
+			ctx.arc(0, -100, 4, 0, 2 * Math.PI);
+			ctx.stroke();
+			ctx.fill();
+
+			// 绘制可以拖拽旋转的蓝色圆圈
+			ctx.beginPath();
+			ctx.arc(0, -130, 4, 0, 2 * Math.PI);
+			ctx.stroke();
+			ctx.fill();
+
+			// 绘制链接两个圆圈的直线
+			ctx.beginPath();
+			ctx.fillStyle = "transparent";
+			ctx.strokeStyle = "#000000";
+			ctx.moveTo(0, -125);
+			ctx.lineTo(0, -105);
+			ctx.stroke();
+
+			ctx.restore();
+		}
+	</script>
+</html>

@@ -1,12 +1,18 @@
-/* v0.12 */
+/* v0.13 */
 /**
- * 将 HandDraw 类各个方法分化。并使用 prototype 修改原型对象
- * 补充圆形
- * 增加了 扫描线填充（fillType = 'line'） 与混合填充 （fillTyp = 'mix'） mix 包含 图形填充与扫描线填充
- * 增加了圆形的 扫描线填充
- * 创建多边形及圆形，将大部分参数对象集合化 设为第一参数；并设置第二参数为其挂载 canvas/context 上下文对象。（目的是方便扩充canvas的操作）
+ * 将画布的操作事件内敛到类内部
  */
-
+//
+function delayLog(id) {
+	if (!window.TIMESTAMP) {
+		window.TIMESTAMP = {};
+		window.TIMESTAMP[id] = Date.now();
+	}
+	const ms = Date.now() - window.TIMESTAMP[id];
+	if (ms < 1000) return;
+	console.log(...arguments);
+	window.TIMESTAMP[id] = Date.now();
+}
 // min - max 的随机数
 const random = function (min, max) {
 	if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
@@ -310,6 +316,29 @@ function throttle(cb, gap) {
 	};
 }
 
+function fnProxy(fn) {
+	return function () {
+		let _this = this;
+		let args = arguments;
+		fn.apply(_this, args);
+	};
+}
+const deepClone = (obj) => {
+	var objClone = Array.isArray(obj) ? [] : {};
+	if (obj && typeof obj === "object") {
+		for (let key in obj) {
+			if (Object.hasOwnProperty.call(obj, key)) {
+				if (obj[key] && typeof obj[key] === "object") {
+					objClone[key] = deepClone(obj[key]);
+				} else {
+					objClone[key] = obj[key];
+				}
+			}
+		}
+	}
+	return objClone;
+};
+
 class HandDraw {
 	constructor(options) {
 		const {
@@ -343,10 +372,10 @@ class HandDraw {
 
 		this.canvas = canvas;
 		this.ctx = ctx;
-		this.canvasSet = new Map();
-		this.contextSet = new Map();
-		this.canvasSet.set(canvasId, canvas);
-		this.contextSet.set(contextId, ctx);
+		this.canvasMap = new Map();
+		this.contextMap = new Map();
+		this.canvasMap.set(canvasId, canvas);
+		this.contextMap.set(contextId, ctx);
 
 		this.colors = {
 			side: colors.side || "#fff",
@@ -359,10 +388,19 @@ class HandDraw {
 			fill: pitchColors.fill || "#f003",
 			line: pitchColors.line || "#f008"
 		};
+
 		this.TOTALINDEX = 0;
+		this.TIMESTAMP = Date.now();
+
+		this.createFnMap = {
+			line: "initLinePath",
+			rect: "createRect",
+			polygon: "createPolygon",
+			circle: "createCircle"
+		};
 
 		// 用来存放纯线段
-		this.lines = {};
+		this.lines = [];
 		this.onRefreshTime = 0;
 		// 用来存放各种图形
 		this.graph = {
@@ -386,19 +424,200 @@ class HandDraw {
 		this.activeStatus = ["onmove", "ontransform"];
 
 		const _el = el ? $(el) : document.body;
+		this.container = _el;
 		_el.appendChild(canvas);
+		// 操作属性
+		this.handle = {
+			// 缓存鼠标按下选中图形
+			mousePitchGraph: null,
+			// 缓存鼠标进入图形
+			mouseEnterGraph: null,
+			// 上一次记录的x位置
+			moveStartx: 0,
+			// 上一次记录的y位置
+			moveStarty: 0
+		};
+		this.throttleCheckMouseInGraph = null;
+		this.mousePitchGraphDragFn = null;
+		this.handleInit();
 	}
 }
 
+const HANDLE = {
+	// 检测是否存在鼠标进入的图形
+	checkMouseInGraph(e) {
+		const { clientX, clientY } = e;
+		let _mEG = this.mouseEnterChecked(clientX, clientY);
+		if (
+			this.handle.mouseEnterGraph &&
+			_mEG &&
+			_mEG.id == this.handle.mouseEnterGraph.id
+		)
+			return;
+		if (_mEG) {
+			// 如果之前不存在 缓存图形
+			if (!this.handle.mouseEnterGraph) this.handle.mouseEnterGraph = _mEG;
+			// 如果之前的缓存图形id与当前id不符合
+			// 重置之前图形，并更新缓存图形
+			if (
+				this.handle.mouseEnterGraph &&
+				_mEG.id != this.handle.mouseEnterGraph.id
+			) {
+				this.updateGraphZoom(this.handle.mouseEnterGraph, 1);
+				this.initGraphStatus(this.handle.mouseEnterGraph);
+				this.handle.mouseEnterGraph = _mEG;
+			}
+			if (this.handle.mouseEnterGraph.draggable) {
+				this.updateGraphZoom(this.handle.mouseEnterGraph, 1.1);
+				this.handle.mouseEnterGraph.context.canvas.style.cursor = "move";
+			} else if (this.handle.mouseEnterGraph.clickable) {
+				this.handle.mouseEnterGraph.context.canvas.style.cursor = "pointer";
+			}
+
+			this.refresh();
+		} else if (this.handle.mouseEnterGraph) {
+			// 离开某个图形，刷新canvas
+			this.updateGraphZoom(this.handle.mouseEnterGraph, 1);
+			this.initGraphStatus(this.handle.mouseEnterGraph);
+			this.handle.mouseEnterGraph.context.canvas.style.cursor = "default";
+			this.handle.mouseEnterGraph = null;
+			this.refresh();
+		}
+	},
+	// 图形拖动
+	mousePitchGraphDrag(e) {
+		// const { clientX, clientY, movementX, movementY } = e;
+		// 草！movementX, movementY 不准确
+		const { clientX, clientY } = e;
+		// 手动计算移动的坐标
+		const moveX = clientX - this.handle.moveStartx;
+		const moveY = clientY - this.handle.moveStarty;
+
+		let isInGraph = true;
+		if (this.handle.mousePitchGraph.type == "polygon") {
+			const { zoom, zoomPoints, points } = this.handle.mousePitchGraph;
+			const checkedPoints = zoom == 1 ? points : zoomPoints || points;
+			isInGraph = isPointInPolygon({ x: clientX, y: clientY }, checkedPoints);
+		} else if (this.handle.mousePitchGraph.type == "circle") {
+			const dis = distance(
+				{ x: this.handle.mousePitchGraph.x, y: this.handle.mousePitchGraph.y },
+				{ x: clientX, y: clientY }
+			);
+			isInGraph = dis <= cir.r;
+		}
+
+		if (!isInGraph) {
+			// 移动时鼠标超出图形区域
+			this.moveCheck();
+			this.initGraphStatus(this.handle.mousePitchGraph);
+			this.handle.moveStartx = clientX;
+			this.handle.moveStarty = clientY;
+			this.refresh();
+			this.handle.mousePitchGraph = null;
+		} else {
+			this.move(this.handle.mousePitchGraph, moveX, moveY);
+			this.handle.moveStartx = clientX;
+			this.handle.moveStarty = clientY;
+			this.refresh();
+		}
+	},
+	// 切换鼠标移动事件
+	moveCheck(type = 1) {
+		if (type == 1) {
+			this.container.removeEventListener(
+				"mousemove",
+				this.mousePitchGraphDragFn
+			);
+			this.container.addEventListener(
+				"mousemove",
+				this.throttleCheckMouseInGraph
+			);
+		} else {
+			this.container.removeEventListener(
+				"mousemove",
+				this.throttleCheckMouseInGraph
+			);
+			this.container.addEventListener("mousemove", this.mousePitchGraphDragFn);
+		}
+	},
+	// 操作初始化
+	handleInit() {
+		this.throttleCheckMouseInGraph = throttle((e) => {
+			this.checkMouseInGraph(e);
+		}, 50);
+
+		this.mousePitchGraphDragFn = fnProxy((e) => {
+			this.mousePitchGraphDrag(e);
+		});
+
+		this.moveCheck();
+		// 点击时将选中的图形onpitch 设置为true
+		this.container.addEventListener("mousedown", (e) => {
+			const { clientX, clientY } = e;
+			// 查询鼠标进入的图形
+			let _mEG = this.mouseEnterChecked(clientX, clientY);
+			if (_mEG && _mEG.draggable) {
+				this.handle.moveStartx = clientX;
+				this.handle.moveStarty = clientY;
+				this.handle.mousePitchGraph = _mEG;
+				this.handle.mousePitchGraph.onpitch = true;
+				this.refresh();
+				this.moveCheck(2);
+			}
+			if (_mEG && _mEG.clickable) {
+				this.handle.moveStartx = clientX;
+				this.handle.moveStarty = clientY;
+				this.handle.mousePitchGraph = _mEG;
+			}
+		});
+
+		this.container.addEventListener("mouseup", (e) => {
+			if (!this.handle.mousePitchGraph) return;
+			const { clientX, clientY } = e;
+			let isInGraph = true;
+			if (this.handle.mousePitchGraph.type == "polygon") {
+				const { zoom, zoomPoints, points } = this.handle.mousePitchGraph;
+				const checkedPoints = zoom == 1 ? points : zoomPoints || points;
+				isInGraph = isPointInPolygon({ x: clientX, y: clientY }, checkedPoints);
+			} else if (this.handle.mousePitchGraph.type == "circle") {
+				const dis = distance(
+					{
+						x: this.handle.mousePitchGraph.x,
+						y: this.handle.mousePitchGraph.y
+					},
+					{ x: clientX, y: clientY }
+				);
+				isInGraph = dis <= cir.r;
+			}
+			let onActive = this.isOnActive(this.handle.mousePitchGraph.id);
+			if (isInGraph && this.handle.mousePitchGraph.clickable && !onActive)
+				this.handle.mousePitchGraph.onclick();
+			if (
+				this.handle.mousePitchGraph &&
+				this.handle.mousePitchGraph.onpitch &&
+				isInGraph
+			) {
+				this.initGraphStatus(this.handle.mousePitchGraph);
+				this.handle.moveStartx = clientX;
+				this.handle.moveStarty = clientY;
+				this.refresh();
+				this.moveCheck();
+			}
+		});
+	}
+};
 // 通用
 const COMMON = {
+	getContainer() {
+		return this.container;
+	},
 	// 获得canvas
 	getCanvas(id) {
-		return id ? this.canvasSet.get(id) : this.canvas;
+		return id ? this.canvasMap.get(id) : this.canvas;
 	},
 	// 获得context
 	getCtx(id) {
-		return id ? this.contextSet.get(id) : this.ctx;
+		return id ? this.contextMap.get(id) : this.ctx;
 	},
 	// 获得图形
 	getGraph(type, id, obiter = "") {
@@ -465,52 +684,57 @@ const COMMON = {
 		this.TOTALINDEX++;
 		return this.TOTALINDEX;
 	},
-
-	clear() {
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+	getCreatedFun(category) {
+		const fnName = this.createFnMap[category];
+		return this[fnName].bind(this);
+	},
+	batchCreate(data) {
+		let _objects = [];
+		for (let i = 0; i < data.length; i++) {
+			let item = deepClone(data[i]);
+			const category = item.category;
+			const createFn = this.getCreatedFun(category);
+			delete item.category;
+			let obj = createFn(item);
+			_objects.push(obj);
+		}
+		return _objects;
+	},
+	clear(context) {
+		if (context)
+			context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+		else {
+			this.contextMap.forEach((ctx) => {
+				ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+			});
+		}
 	},
 	// onlyPoint 归零化 / 只用于点位
 	// targetPoint 目标点位，如果onlyPoint = false，targetPoint 就视为图形 x y
 	// referPoint 参照点位，如果onlyPoint = false，referPoint 就视为图形参照点
 	scaleCommon(options) {
-		let {
-			onlyPoint = true,
-			targetPoint,
-			referPoint,
-			targetRate,
-			width,
-			height
-		} = options;
+		let { targetPoint, referPoint, targetRate = 1 } = options;
 		const { x: sx, y: sy } = referPoint;
 		const { x: tx, y: ty } = targetPoint;
-		if (!width || !height) onlyPoint = true;
 		let _sx, _sy, _tx, _ty, top, left, right, bottom, targetx, targety;
-		if (onlyPoint) {
-			_sx = sx - sx;
-			_sy = sy - sy;
-			_tx = tx - sx;
-			_ty = ty - sy;
+		_sx = sx - sx;
+		_sy = sy - sy;
+		_tx = tx - sx;
+		_ty = ty - sy;
 
-			if (_sx > _tx) {
-				(left = _tx), (right = _sx);
-			} else {
-				(left = _sx), (right = _tx);
-			}
-			if (_sy > _ty) {
-				(bottom = _sy), (top = _ty);
-			} else {
-				(bottom = _ty), (top = _sy);
-			}
-			targetx = _sx * (1 - targetRate);
-			targety = _sy * (1 - targetRate);
+		if (_sx > _tx) {
+			(left = _tx), (right = _sx);
 		} else {
-			left = tx;
-			right = tx + width;
-			top = ty;
-			bottom = ty + height;
-			targetx = sx * (1 - targetRate);
-			targety = sy * (1 - targetRate);
+			(left = _sx), (right = _tx);
 		}
+		if (_sy > _ty) {
+			(bottom = _sy), (top = _ty);
+		} else {
+			(bottom = _ty), (top = _sy);
+		}
+		targetx = _sx * (1 - targetRate);
+		targety = _sy * (1 - targetRate);
+
 		const leftTop = [left, top, 1, 1];
 		const rightTop = [right, top, 1, 1];
 		const rightBtoom = [right, bottom, 1, 1];
@@ -531,32 +755,39 @@ const COMMON = {
 		const target = new Float32Array([...dot1, ...dot2, ...dot3, ...dot4]);
 		const now = multiply(out, target, original);
 
-		if (onlyPoint) {
-			let gx, gy;
-			if (_sx > _tx) {
-				gx = now[0] + sx;
-			} else {
-				gx = now[4] + sx;
-			}
-			if (_sy > _ty) {
-				gy = now[1] + sy;
-			} else {
-				gy = now[9] + sy;
-			}
-			return {
-				x: gx,
-				y: gy
-			};
+		let gx, gy;
+		if (_sx > _tx) {
+			gx = now[0] + sx;
 		} else {
-			return {
-				width: now[4] - now[0],
-				height: now[9] - now[1],
-				left: now[0],
-				right: now[4],
-				top: now[1],
-				bottom: now[9]
-			};
+			gx = now[4] + sx;
 		}
+		if (_sy > _ty) {
+			gy = now[1] + sy;
+		} else {
+			gy = now[9] + sy;
+		}
+		return {
+			x: gx,
+			y: gy
+		};
+	},
+
+	// 根据目标点位，获取某个点位旋转后的坐标
+	centerGetDegDot(options) {
+		let { targetPoint, referPoint, deg = 0 } = options;
+		const cy = referPoint.y;
+		const cx = referPoint.x;
+		const cir = {
+			x: referPoint.x,
+			y: referPoint.y,
+			r: distance({ x: targetPoint.x, y: targetPoint.y }, referPoint)
+		};
+		let sdeg =
+			Math.atan2(cy - targetPoint.y, cx - targetPoint.x) * (180 / Math.PI);
+
+		sdeg = (sdeg < 0 ? 360 + sdeg : sdeg) + 180 + deg;
+		const rotateDot = this.getPointOnCircle(sdeg, cir);
+		return rotateDot;
 	},
 
 	// 此处id是不刷新的图形的id
@@ -572,6 +803,7 @@ const COMMON = {
 		this.refreshAllCircles(id);
 	},
 	createCanvas(options, callback) {
+		// 主要创建静态的canvas图层（动态，改起来太麻烦）
 		const { x, y, width, height, zIndex, id, classname } = options;
 		try {
 			const canvas = document.createElement("canvas");
@@ -579,12 +811,13 @@ const COMMON = {
 			const canvasId = `canvas_id_${_id}`;
 			const contextId = `ctx_id_${_id}`;
 			const ctx = canvas.getContext("2d");
-			this.canvasSet.set(canvasId, canvas);
-			this.contextSet.set(contextId, ctx);
+			canvas.setAttribute("id", canvasId);
+			this.canvasMap.set(canvasId, canvas);
+			this.contextMap.set(contextId, ctx);
 			canvas.style.position = "absolute";
-			canvas.style.zIndex = zIndex;
-			canvas.style.left = `${x}px`;
-			canvas.style.top = `${y}px`;
+			canvas.style.zIndex = zIndex || 0;
+			canvas.style.left = `${x || 0}px`;
+			canvas.style.top = `${y || 0}px`;
 			canvas.width = width;
 			canvas.height = height;
 			if (classname) canvas.classList.add(classname);
@@ -613,17 +846,19 @@ const COMMON = {
 		const polygons = this.graph["polygon"];
 		for (let key in polygons) {
 			const g = polygons[key];
+			if (!g.operability || g.static) continue;
 			let gdots = g.points;
 			let isin = isPointInPolygon(dot, gdots);
-			if (isin && g.operability) arrs.push(g);
+			if (isin) arrs.push(g);
 		}
 		// }
 		const circles = this.graph["circle"];
 
 		for (let key in circles) {
 			let cir = circles[key];
+			if (!cir.operability || cir.static) continue;
 			const dis = distance({ x: cir.x, y: cir.y }, { x, y });
-			if (dis <= cir.r && cir.operability) {
+			if (dis <= cir.r) {
 				arrs.push(cir);
 			}
 		}
@@ -771,6 +1006,7 @@ const LINE = {
 	},
 	// 输入线条数据并绘制
 	initLinePath(options, context) {
+		if (!options) console.error(`function initLinePath: 入参错误`);
 		let {
 			path,
 			offset = 2,
@@ -778,7 +1014,8 @@ const LINE = {
 			type = "line",
 			double = true,
 			id,
-			lineType = "side"
+			lineType = "side",
+			static = false
 		} = options;
 		if (!path || path.length < 2) {
 			console.warn(
@@ -788,7 +1025,7 @@ const LINE = {
 			);
 			return;
 		} else {
-			let lines = {};
+			let lines = [];
 			offset = offset == 0 ? 1 : offset;
 			for (let i = 0; i < path.length; i++) {
 				const p1 = path[i];
@@ -803,11 +1040,14 @@ const LINE = {
 								color ||
 								(lineType == "side" ? this.colors.side : this.colors.line),
 							double: options.hasOwnProperty("double") ? double : true,
+							static: options.hasOwnProperty("static") ? static : false,
 							context
 						});
-						const key = line.id;
-						this.lines[key] = line;
-						lines[key] = line;
+						// const key = line.id;
+						// this.lines[key] = line;
+						// lines[key] = line;
+						this.lines.push(line);
+						lines.push(line);
 					} else {
 						const line = this.createLine({
 							p1,
@@ -855,7 +1095,9 @@ const LINE = {
 
 	// 重绘某线条
 	refreshLine(line, color, context, log = false) {
-		let paths = line.zoomPath || line.path;
+		const { zoom, zoomPath, path } = line;
+		const paths = zoom !== 1 && zoomPath && zoomPath.length ? zoomPath : path;
+
 		if (log) {
 			// 调试用
 			console.warn(line, color);
@@ -870,12 +1112,13 @@ const LINE = {
 		// 重绘线段
 		for (let k in this.lines) {
 			const line = this.lines[k];
-			if (line.id != id) this.refreshLine(line);
+			if (line.id != id && !line.static) this.refreshLine(line);
 		}
 	},
 	getLinePoint(line) {
 		const path = line.path;
 		let points = [];
+		let zoomPoints = [];
 		path.map((p) => {
 			const count = p.length / 2;
 			let ps = [];
@@ -887,7 +1130,22 @@ const LINE = {
 			}
 			points.push(ps);
 		});
-		return points;
+
+		if (line.zoomPath && line.zoomPath.length) {
+			const zoomPath = line.zoomPath;
+			zoomPath.map((p) => {
+				const count = p.length / 2;
+				let ps = [];
+				for (let i = 0; i < count; i++) {
+					ps.push({
+						x: p[i * 2],
+						y: p[i * 2 + 1]
+					});
+				}
+				zoomPoints.push(ps);
+			});
+		}
+		return [points, zoomPoints];
 	},
 	updatePath(paths, ox, oy) {
 		let _paths = [];
@@ -907,14 +1165,15 @@ const LINE = {
 	updateLineInMove(line, ox, oy) {
 		const paths = this.updatePath(line.path, ox, oy);
 		line.path = paths;
-		const zoomPath = this.updatePath(line.zoomPath, ox, oy);
-		line.path = paths;
-		line.zoomPath = zoomPath;
+		if (line.zoomPath && line.zoomPath.length) {
+			const zoomPath = this.updatePath(line.zoomPath, ox, oy);
+			line.zoomPath = deepClone(zoomPath);
+		}
 	},
 	// 更新线条数据 缩放
 	// rp 参照点, 没有参照点就以线段中点为参照点
 	updateLineInZoom(line, rate, rp) {
-		const linepoints = this.getLinePoint(line);
+		const [linepoints] = this.getLinePoint(line);
 		let paths = [];
 		const [p1, p2] = line.points;
 		const cx = rp ? rp.x : (p1.x + p2.x) / 2;
@@ -931,7 +1190,44 @@ const LINE = {
 			});
 			paths.push(_paths);
 		});
-		line.zoomPath = paths;
+		line.zoomPath = deepClone(paths);
+	},
+	// 更新线条数据 旋转
+	// rp 参照点, 没有参照点就以线段中点为参照点
+	updateLineInRotate(line, deg, rp) {
+		deg = deg % 360;
+		const [linepoints, zoomLinepoints] = this.getLinePoint(line);
+		let paths = [];
+		let zoomPath = [];
+		const [p1, p2] = line.points;
+		const cx = rp ? rp.x : (p1.x + p2.x) / 2;
+		const cy = rp ? rp.y : (p1.y + p2.y) / 2;
+		linepoints.map((_linepoints, i) => {
+			let _paths = [];
+			let _zoomPaths = [];
+			_linepoints.map((pot, j) => {
+				let { x, y } = this.centerGetDegDot({
+					targetPoint: pot,
+					referPoint: { x: cx, y: cy },
+					deg: deg - line.rotateDeg || 0
+				});
+				_paths.push(x, y);
+				if (zoomLinepoints && zoomLinepoints.length) {
+					const _zoompot = zoomLinepoints[i][j];
+					let { x: _x, y: _y } = this.centerGetDegDot({
+						targetPoint: _zoompot,
+						referPoint: { x: cx, y: cy },
+						deg: deg - line.rotateDeg || 0
+					});
+					_zoomPaths.push(_x, _y);
+				}
+			});
+			if (_paths.length) paths.push(_paths);
+			if (_zoomPaths.length) zoomPath.push(_zoomPaths);
+		});
+		line.path = paths;
+		line.zoomPath = deepClone(zoomPath);
+		line.rotateDeg = deg;
 	},
 
 	setLineRealZoom(line, zoom, zoomPath) {
@@ -951,7 +1247,11 @@ const GRAPH = {
 			id,
 			offset = 2,
 			operability = true,
+			static = false,
 			colors = {},
+			draggable = false,
+			clickable = false,
+			onclick,
 			pitchColors = {},
 			double = true,
 			fillDeg = 0,
@@ -967,7 +1267,14 @@ const GRAPH = {
 		let w = Math.abs(Math.max(...allxs) - Math.min(...allxs));
 		let h = Math.abs(Math.max(...allys) - Math.min(...allys));
 		graph.type = "polygon";
-		graph.operability = operability;
+		graph.operability = options.hasOwnProperty("operability")
+			? operability
+			: true;
+		graph.static = options.hasOwnProperty("static") ? static : false;
+		graph.draggable = options.hasOwnProperty("draggable") ? draggable : false;
+		graph.clickable = options.hasOwnProperty("clickable") ? clickable : false;
+		if (graph.clickable && onclick) graph.onclick = onclick;
+
 		graph.x = x;
 		graph.y = y;
 		graph.fillType = fillType;
@@ -1012,7 +1319,7 @@ const GRAPH = {
 		delete _options.position;
 		return this.createPolygon(_options, context);
 	},
-	// fillType: polygon图形填充，就是全部填充；line描线填充
+	// fillType: fill 图形填充，就是全部填充；line描线填充
 	fillPolygon(graph) {
 		let { fillType } = graph;
 		if (fillType == "fill" || fillType == "mix") {
@@ -1023,7 +1330,8 @@ const GRAPH = {
 			ctx.save();
 			ctx.beginPath();
 			if (graph.type === "polygon") {
-				const path = graph.zoomPoints || graph.points;
+				const { zoom, zoomPoints, points } = graph;
+				const path = zoom == 1 ? points : zoomPoints || points;
 				path.map((e, i) => {
 					if (i == 0) ctx.moveTo(e.x, e.y);
 					else ctx.lineTo(e.x, e.y);
@@ -1253,7 +1561,7 @@ const GRAPH = {
 			});
 		}
 	},
-	// 更新图形数据 targetPoint
+	// 更新图形数据 缩放 targetPoint
 	updateGraphZoom(graph, rate, rp) {
 		let center = {};
 		if (graph.type == "polygon") {
@@ -1273,6 +1581,27 @@ const GRAPH = {
 			this.updateLineInZoom(line, rate, _rp);
 		});
 	},
+	// 更新图形数据 旋转
+	updateGraphRotate(graph, deg, rp) {
+		let center = {};
+		if (graph.type == "polygon") {
+			center = this.getPointsCenter(graph.points);
+		}
+		if (graph.type == "circle") {
+			center = { x: graph.x, y: graph.y };
+		}
+		const cx = rp ? rp.x : center.x;
+		const cy = rp ? rp.y : center.y;
+		let _rp = {
+			x: cx,
+			y: cy
+		};
+		this.rotatePointFn(graph, deg, _rp);
+		graph.lines.map((line) => {
+			this.updateLineInRotate(line, deg, _rp);
+		});
+	},
+	// 缩放计算
 	zoomPointsFn(graph, rate) {
 		let center = {};
 		if (graph.type == "polygon") {
@@ -1310,6 +1639,93 @@ const GRAPH = {
 		});
 		graph.zoom = rate;
 		graph.zoomPoints = zoomPoints;
+	},
+	// 旋转计算
+	rotatePointFn(graph, deg, _rp) {
+		let center = _rp;
+		// if (graph.type == "polygon") {
+		// 	center = this.getPointsCenter(graph.points);
+		// }
+		if (graph.type == "circle") {
+			// center = { x: graph.x, y: graph.y };
+			this.updateCircelOffsetRotate(graph, center, deg);
+		}
+		let points = [];
+		graph.points.map((pot) => {
+			let _pot = this.centerGetDegDot({
+				targetPoint: pot,
+				referPoint: center,
+				deg: deg - graph.rotateDeg || 0
+			});
+			points.push(_pot);
+		});
+
+		graph.points = points;
+
+		if (graph.zoom != 1 && graph.zoomPoints) {
+			let zoomPoints = [];
+			graph.zoomPoints.map((pot) => {
+				let _pot = this.centerGetDegDot({
+					targetPoint: pot,
+					referPoint: center,
+					deg: deg - graph.rotateDeg || 0
+				});
+				zoomPoints.push(_pot);
+			});
+			graph.zoomPoints = zoomPoints;
+		}
+
+		graph.rotateDeg = deg;
+	},
+	// 更新圆形起点终点偏移位置
+	updateCircelOffsetRotate(cir, center, deg) {
+		const start = { x: cir.offset.startX, y: cir.offset.startY };
+		const end = { x: cir.offset.endX, y: cir.offset.endY };
+		const _start = this.centerGetDegDot({
+			targetPoint: start,
+			referPoint: center,
+			deg: deg - cir.rotateDeg || 0
+		});
+		const _end = this.centerGetDegDot({
+			targetPoint: end,
+			referPoint: center,
+			deg: deg - cir.rotateDeg || 0
+		});
+		cir.offset = {
+			startX: _start.x,
+			startY: _start.y,
+			endX: _end.x,
+			endY: _end.y
+		};
+		if (cir.zoomOffset) {
+			const start = { x: cir.zoomOffset.startX, y: cir.zoomOffset.startY };
+			const end = { x: cir.zoomOffset.endX, y: cir.zoomOffset.endY };
+			const _start = this.centerGetDegDot({
+				targetPoint: start,
+				referPoint: center,
+				deg: deg - cir.rotateDeg || 0
+			});
+			const _end = this.centerGetDegDot({
+				targetPoint: end,
+				referPoint: center,
+				deg: deg - cir.rotateDeg || 0
+			});
+			cir.zoomOffset = {
+				startX: _start.x,
+				startY: _start.y,
+				endX: _end.x,
+				endY: _end.y
+			};
+		}
+		if (cir.x != center.x || cir.y != center.y) {
+			const { x: _x, y: _y } = this.centerGetDegDot({
+				targetPoint: { x: cir.x, y: cir.y },
+				referPoint: center,
+				deg: deg - cir.rotateDeg || 0
+			});
+			cir.x = _x;
+			cir.y = _y;
+		}
 	},
 	// 更新图形数据 移动
 	updateGraphMove(graph, ox, oy) {
@@ -1372,10 +1788,7 @@ const GRAPH = {
 		const gs = this.graph["polygon"];
 		for (let gkey in gs) {
 			const g = gs[gkey];
-			// const ontransform =
-			// 	g.ontransform || g.onmove || g.onzoom || g.onpitch || g.onenter;
-			// if (!ontransform && id != g.id) this.refreshGraph(g);
-			if (id != g.id) this.refreshGraph(g);
+			if (id != g.id && !g.static) this.refreshGraph(g);
 		}
 	},
 	// 不重置某个状态 unhands
@@ -1406,6 +1819,13 @@ const GRAPH = {
 		if (!this.activeGraph[type][id]) return;
 		delete this.activeGraph[type][id];
 	},
+	// 判断当前图形是否处于活动中
+	isOnActive(id) {
+		for (let k in this.activeGraph) {
+			if (this.activeGraph[k][id]) return true;
+		}
+		return false;
+	},
 	// 移动图形
 	move(graph, movementX, movementY) {
 		if (!graph.onpitch) return;
@@ -1432,6 +1852,10 @@ const CIRCLE = {
 			r,
 			id,
 			operability = true,
+			static = false,
+			draggable = false,
+			clickable = false,
+			onclick,
 			colors = {},
 			pitchColors = {},
 			fillType = "fill",
@@ -1455,8 +1879,15 @@ const CIRCLE = {
 		};
 		graph.type = "circle";
 		graph.context = context || this.ctx;
+
 		graph.fillType = fillType;
-		graph.operability = operability;
+		graph.operability = options.hasOwnProperty("operability")
+			? operability
+			: true;
+		graph.static = options.hasOwnProperty("static") ? static : false;
+		graph.draggable = options.hasOwnProperty("draggable") ? draggable : false;
+		graph.clickable = options.hasOwnProperty("clickable") ? clickable : false;
+		if (graph.clickable && onclick) graph.onclick = onclick;
 		graph.fillDeg = ["line", "mix"].includes(fillType) ? fillDeg : 0;
 		fillGap = fillGap <= 0 ? 1 : fillGap;
 		graph.fillGap = ["line", "mix"].includes(fillType) ? fillGap : 0;
@@ -1487,10 +1918,13 @@ const CIRCLE = {
 		return graph;
 	},
 	drawCir(cir) {
-		const points = cir.zoomPoints || cir.points;
+		const { zoom, zoomPoints, points: _points, offset, zoomOffset } = cir;
+		const points = zoom == 1 ? _points : zoomPoints || _points;
 		const len = points.length;
 		const ctx = cir.context;
-		const { startX, startY, endX, endY } = cir.zoomOffset || cir.offset;
+
+		const _offset = zoom == 1 ? offset : zoomOffset || offset;
+		const { startX, startY, endX, endY } = _offset;
 
 		this.fillPolygon(cir);
 		for (let i = 0; i < len; i += 2) {
@@ -1516,10 +1950,7 @@ const CIRCLE = {
 		const gs = this.graph["circle"];
 		for (let gkey in gs) {
 			const g = gs[gkey];
-			// const ontransform =
-			// 	g.ontransform || g.onmove || g.onzoom || g.onpitch || g.onenter;
-			// if (!ontransform && id != g.id) this.drawCir(g);
-			if (id != g.id) this.drawCir(g);
+			if (id != g.id && !g.static) this.drawCir(g);
 		}
 	},
 	// 利用圆的方程与直线一般式计算x位置
@@ -1595,7 +2026,8 @@ const FUNCTIONS = {
 	...COMMON,
 	...LINE,
 	...GRAPH,
-	...CIRCLE
+	...CIRCLE,
+	...HANDLE
 };
 HandDraw.prototype.constructor = HandDraw;
 for (let key in FUNCTIONS) {
