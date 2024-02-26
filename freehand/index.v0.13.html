@@ -53,6 +53,7 @@
 		// 圆形
 		let cir2 = graphObjects[6];
 
+		// 线段缩放
 		// scaleLine();
 		function scaleLine() {
 			let duration = 3000;
@@ -80,6 +81,8 @@
 				}
 			});
 		}
+
+		// 线段旋转
 		rotateLine();
 		function rotateLine() {
 			let duration = 3000;
@@ -108,8 +111,10 @@
 				}
 			});
 		}
-		rotateTriangle();
-		function rotateTriangle() {
+
+		// 旋转图形
+		rotateGraph();
+		function rotateGraph() {
 			let duration = random(1, 4) * 10000;
 			let t = 0;
 			let degStart = 0;
@@ -119,18 +124,7 @@
 			const graph = PA[random(0, PA.length - 1)];
 			const rotateType = random(0, 1);
 			let RP = null;
-			const lineAnms = [
-				"Quad",
-				"Cubic",
-				"Quart",
-				"Quint",
-				"Sine",
-				"Expo",
-				"Circ",
-				"Elastic",
-				"Back",
-				"Bounce"
-			];
+			const lineAnms = Object.keys(Math.tween);
 			const anm = lineAnms[random(0, lineAnms.length - 1)];
 			console.log("---随机图形：", graph);
 			console.log("---随机时间：", `${duration / 1000} s`);
@@ -138,7 +132,8 @@
 			console.log("---随机线性动画：", anm);
 			console.log("---旋转方式：", rotateType ? "任意顶点旋转" : "中心旋转");
 			if (rotateType) {
-				RP = graph.points[random(0, graph.points.length - 1)];
+				const points = graph.points;
+				RP = points[random(0, points.length - 1)];
 			}
 			let evtid = evtMng.addEvent({
 				event: () => {
@@ -146,7 +141,7 @@
 					hands.updateGraphRotate(graph, deg, RP);
 					if (t >= frameCount) {
 						evtMng.removeEvent(evtid);
-						rotateTriangle();
+						rotateGraph();
 					}
 					t++;
 					hands.refresh();
@@ -154,6 +149,7 @@
 			});
 		}
 
+		// 改变线段/图形颜色
 		changeRectColor();
 		function changeRectColor() {
 			let colorSide = random(0, 360);
@@ -178,6 +174,8 @@
 				}
 			});
 		}
+
+		// 缩放图形
 		scaleGraph();
 		function scaleGraph() {
 			let duration = 2000;
@@ -204,29 +202,5 @@
 				}
 			});
 		}
-		/*
-		// 多个canvas测试
-		*/
-		async function test() {
-			const { canvas, context } = await hands.createCanvas({
-				width: 300,
-				height: 300,
-				x: 500,
-				y: 200,
-				zIndex: 2,
-				classname: "test-canvas"
-			});
-			document.body.appendChild(canvas);
-			hands.dotin({ x: 520, y: 220 }, "#f0f", context);
-			hands.createCircle(
-				{
-					x: 150,
-					y: 150,
-					r: 50
-				},
-				context
-			);
-		}
-		// test();
 	</script>
 </html>

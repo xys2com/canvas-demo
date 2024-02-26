@@ -515,7 +515,7 @@ const HANDLE = {
 			this.refresh();
 			this.handle.mousePitchGraph = null;
 		} else {
-			this.move(this.handle.mousePitchGraph, moveX, moveY);
+			this.graphMove(this.handle.mousePitchGraph, moveX, moveY);
 			this.handle.moveStartx = clientX;
 			this.handle.moveStarty = clientY;
 			this.refresh();
@@ -608,6 +608,7 @@ const HANDLE = {
 };
 // 通用
 const COMMON = {
+	// 获得canvas
 	getContainer() {
 		return this.container;
 	},
@@ -1229,7 +1230,6 @@ const LINE = {
 		line.zoomPath = deepClone(zoomPath);
 		line.rotateDeg = deg;
 	},
-
 	setLineRealZoom(line, zoom, zoomPath) {
 		line.zoom = zoom || line.zoom;
 		line.path = zoomPath || line.zoomPath;
@@ -1827,7 +1827,7 @@ const GRAPH = {
 		return false;
 	},
 	// 移动图形
-	move(graph, movementX, movementY) {
+	graphMove(graph, movementX, movementY) {
 		if (!graph.onpitch) return;
 		// 将图形添加至活动对象的移动中
 		this.addActiveGraph("onmove", graph);
