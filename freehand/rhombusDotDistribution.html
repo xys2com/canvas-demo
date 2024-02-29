@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		body {
+			background: #000;
+			color: #00eeffab;
+		}
+		canvas {
+			border: 1px solid #fff;
+		}
+	</style>
+	<body>
+		<canvas id="canvas"></canvas>
+	</body>
+	<script>
+		const random = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				let a = max;
+				(max = min), (min = a);
+			}
+			// 有一个为小数
+			// 输出小数
+			const r = +min % 1 != 0 || +max % 1 != 0;
+			if (r) {
+				min *= 100000000;
+				max *= 100000000;
+			}
+			return (
+				(Math.floor(Math.random() * (max - min + 1)) + min) /
+				(r ? 100000000 : 1)
+			);
+		};
+		const distance = (d1, d2) =>
+			Math.sqrt((d2.x - d1.x) * (d2.x - d1.x) + (d2.y - d1.y) * (d2.y - d1.y));
+	</script>
+	<script>
+		const canvas = document.getElementById("canvas"),
+			ctx = canvas.getContext("2d"),
+			WIDTH = 800,
+			HEIGHT = 400;
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		const CX = WIDTH / 2,
+			CY = HEIGHT / 2;
+		// 画一个点
+		const dotin = (dot, name, c = "#f00") => {
+			try {
+				ctx.save();
+				ctx.beginPath();
+				ctx.moveTo(dot.x, dot.y);
+				ctx.arc(dot.x, dot.y, 3, 0, 2 * Math.PI);
+				ctx.closePath();
+				ctx.fillStyle = c;
+				const text = name || `${dot.x.toFixed(2)},${dot.y.toFixed(2)}`;
+				ctx.fill();
+				const x =
+					dot.x <= 0 ? 10 : dot.x >= WIDTH ? WIDTH - name.length * 8 : dot.x;
+				const y = dot.y <= 0 ? 10 : dot.y >= HEIGHT ? HEIGHT - 20 : dot.y;
+				ctx.fillText(text, x, y);
+				ctx.closePath();
+				ctx.restore();
+			} catch (error) {
+				console.log(error);
+				console.log(dot);
+			}
+		};
+
+		const latticeRandom = () => {
+			const count = 500;
+			const offsetY = HEIGHT / 6;
+			const offsetX = WIDTH / 6;
+			for (let i = 0; i < count; i++) {
+				const xRate = Math.pow(Math.random(), 2) * CX * 0.95;
+				const x = CX + xRate * [-1, 1][random(0, 1)];
+				// const x = random(-50, WIDTH + 50);
+				const _xr = (x / WIDTH) * 180;
+
+				// 越接近x轴 上下波总范围越小
+				const yFluctuate = Math.pow(1 - Math.abs(x - CX) / CX, 0.8);
+				const ymax =
+					Math.sin((_xr * Math.PI) / 180) * CY * yFluctuate +
+					CY +
+					random(-offsetY, offsetY);
+
+				const ymin = HEIGHT - ymax + random(-offsetY, offsetY) * 2;
+				const y = random(ymin, ymax);
+				const _x = x; //+ random(-offsetX, offsetX);
+				const _y = y;
+				dotin({ x: _x, y: _y }, " ");
+			}
+		};
+		latticeRandom();
+	</script>
+</html>

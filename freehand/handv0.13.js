@@ -128,6 +128,7 @@ function hslToHex(p) {
 
 	return "#" + r + g + b;
 }
+
 const randomId = () => Math.random().toString(32).slice(-8);
 
 const isPointInPolygon = (point, polygon, log) => {
@@ -254,6 +255,7 @@ const distance = (d1, d2) =>
 // 偏移斜率
 const slopeOffset = (x1, y1, x2, y2) =>
 	x1 == x2 ? random(5, 50) / 1000 : (y2 - y1) / (x2 - x1);
+
 // 标准斜率
 const slope = (x1, y1, x2, y2) => (y2 - y1) / (x2 - x1);
 
@@ -303,7 +305,7 @@ const $ = (el) => {
 };
 
 // 节流
-function throttle(cb, gap) {
+const throttle = (cb, gap) => {
 	let timer;
 	return function () {
 		let _this = this;
@@ -314,7 +316,7 @@ function throttle(cb, gap) {
 				cb.apply(_this, args);
 			}, gap);
 	};
-}
+};
 
 function fnProxy(fn) {
 	return function () {
@@ -847,7 +849,7 @@ const COMMON = {
 		const polygons = this.graph["polygon"];
 		for (let key in polygons) {
 			const g = polygons[key];
-			if (!g.operability || g.static) continue;
+			if (!g.operability || g.staticstate) continue;
 			let gdots = g.points;
 			let isin = isPointInPolygon(dot, gdots);
 			if (isin) arrs.push(g);
@@ -857,7 +859,7 @@ const COMMON = {
 
 		for (let key in circles) {
 			let cir = circles[key];
-			if (!cir.operability || cir.static) continue;
+			if (!cir.operability || cir.staticstate) continue;
 			const dis = distance({ x: cir.x, y: cir.y }, { x, y });
 			if (dis <= cir.r) {
 				arrs.push(cir);
@@ -1016,7 +1018,7 @@ const LINE = {
 			double = true,
 			id,
 			lineType = "side",
-			static = false
+			staticstate = false
 		} = options;
 		if (!path || path.length < 2) {
 			console.warn(
@@ -1041,7 +1043,9 @@ const LINE = {
 								color ||
 								(lineType == "side" ? this.colors.side : this.colors.line),
 							double: options.hasOwnProperty("double") ? double : true,
-							static: options.hasOwnProperty("static") ? static : false,
+							staticstate: options.hasOwnProperty("staticstate")
+								? staticstate
+								: false,
 							context
 						});
 						// const key = line.id;
@@ -1113,7 +1117,7 @@ const LINE = {
 		// 重绘线段
 		for (let k in this.lines) {
 			const line = this.lines[k];
-			if (line.id != id && !line.static) this.refreshLine(line);
+			if (line.id != id && !line.staticstate) this.refreshLine(line);
 		}
 	},
 	getLinePoint(line) {
@@ -1247,7 +1251,7 @@ const GRAPH = {
 			id,
 			offset = 2,
 			operability = true,
-			static = false,
+			staticstate = false,
 			colors = {},
 			draggable = false,
 			clickable = false,
@@ -1270,7 +1274,9 @@ const GRAPH = {
 		graph.operability = options.hasOwnProperty("operability")
 			? operability
 			: true;
-		graph.static = options.hasOwnProperty("static") ? static : false;
+		graph.staticstate = options.hasOwnProperty("staticstate")
+			? staticstate
+			: false;
 		graph.draggable = options.hasOwnProperty("draggable") ? draggable : false;
 		graph.clickable = options.hasOwnProperty("clickable") ? clickable : false;
 		if (graph.clickable && onclick) graph.onclick = onclick;
@@ -1788,7 +1794,7 @@ const GRAPH = {
 		const gs = this.graph["polygon"];
 		for (let gkey in gs) {
 			const g = gs[gkey];
-			if (id != g.id && !g.static) this.refreshGraph(g);
+			if (id != g.id && !g.staticstate) this.refreshGraph(g);
 		}
 	},
 	// 不重置某个状态 unhands
@@ -1852,7 +1858,7 @@ const CIRCLE = {
 			r,
 			id,
 			operability = true,
-			static = false,
+			staticstate = false,
 			draggable = false,
 			clickable = false,
 			onclick,
@@ -1884,7 +1890,9 @@ const CIRCLE = {
 		graph.operability = options.hasOwnProperty("operability")
 			? operability
 			: true;
-		graph.static = options.hasOwnProperty("static") ? static : false;
+		graph.staticstate = options.hasOwnProperty("staticstate")
+			? staticstate
+			: false;
 		graph.draggable = options.hasOwnProperty("draggable") ? draggable : false;
 		graph.clickable = options.hasOwnProperty("clickable") ? clickable : false;
 		if (graph.clickable && onclick) graph.onclick = onclick;
@@ -1950,7 +1958,7 @@ const CIRCLE = {
 		const gs = this.graph["circle"];
 		for (let gkey in gs) {
 			const g = gs[gkey];
-			if (id != g.id && !g.static) this.drawCir(g);
+			if (id != g.id && !g.staticstate) this.drawCir(g);
 		}
 	},
 	// 利用圆的方程与直线一般式计算x位置
