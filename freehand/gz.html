@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		#wrap {
+			position: relative;
+		}
+		#img {
+			position: absolute;
+			left: 0;
+			top: 0;
+			z-index: 5;
+		}
+		canvas {
+			position: absolute;
+			z-index: 10;
+			left: 0;
+			top: 0;
+		}
+	</style>
+	<body>
+		<div id="wrap">
+			<img id="img" src="./微信图片_20240614171738.png" alt="" />
+		</div>
+	</body>
+	<script>
+		const wrap = document.getElementById("wrap");
+		const img = document.getElementById("img");
+		img.onload = () => {
+			const canvas = document.createElement("canvas");
+			canvas.width = img.width;
+			canvas.height = img.height;
+			canvas.style.pointerEvents = "absolute";
+			canvas.style.top = 0;
+			canvas.style.left = 0;
+			canvas.style.zIndex = 10;
+			wrap.appendChild(canvas);
+			const ctx = canvas.getContext("2d");
+			ctx.strokeStyle = "#f00";
+			let sec = false;
+			wrap.onclick = function (e) {
+				const x = e.offsetX;
+				const y = e.offsetY;
+				if (!sec) {
+					ctx.beginPath();
+					ctx.moveTo(x, y);
+				} else {
+					ctx.lineTo(x, y);
+					ctx.stroke();
+					ctx.closePath();
+				}
+				sec = !sec;
+			};
+		};
+	</script>
+</html>

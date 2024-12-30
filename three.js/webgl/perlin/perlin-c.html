@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			position: absolute;
+			background: #000;
+			/* border: 1px solid #fff; */
+		}
+	</style>
+	<body>
+		<canvas id="canvas" style="left: 0px"></canvas>
+		<canvas id="canvas2" style="left: 400px"></canvas>
+	</body>
+	<script src="./glsl.js"></script>
+	<script>
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const SIZE = 4; //划分为 SIZE * SIZE 的晶格
+		const canvas = $("#canvas");
+		const canvas2 = $("#canvas2");
+		canvas.height = HEIGHT;
+		canvas.width = WIDTH;
+		canvas2.height = HEIGHT;
+		canvas2.width = WIDTH;
+		const ctx = canvas.getContext("2d");
+		const ctx2 = canvas2.getContext("2d");
+		const xAxis = WIDTH / SIZE;
+		const yAxis = HEIGHT / SIZE;
+
+		let DOTS_VALUES = [];
+		// 根据宽高及SIZE
+		for (let rowi = 0; rowi <= SIZE; rowi++) {
+			let row = [];
+			for (let coli = 0; coli <= SIZE; coli++) {
+				let x = coli * xAxis;
+				let y = rowi * yAxis;
+				let item = {
+					x,
+					y,
+					value: random(0, 360) //randomColor(HAS_T)
+				};
+				row.push(item);
+			}
+			DOTS_VALUES.push(row);
+		}
+
+		// 插入点位
+		function dotin(dot, c) {
+			ctx.save();
+			const { x, y } = dot;
+			ctx.beginPath();
+			ctx.strokeStyle = c;
+			ctx.fillStyle = c;
+			ctx.arc(x, y, 2, 0, 2 * Math.PI);
+			ctx.stroke();
+			ctx.fill();
+			ctx.closePath();
+			ctx.restore();
+		}
+
+		// D1——————D2
+		// |        |
+		// |        |
+		// |        |
+		// D4——————D3
+
+		function main() {
+			let hues = [];
+			for (let rowi = 0; rowi < DOTS_VALUES.length - 1; rowi++) {
+				let row = DOTS_VALUES[rowi];
+				let row2 = DOTS_VALUES[rowi + 1];
+				for (let coli = 0; coli < row.length - 1; coli++) {
+					// const D1value = row[coli].value;
+					// const D2value = row[coli + 1].value;
+					// const D3value = row2[coli + 1].value;
+					// const D4value = row2[coli].value;
+
+					let baseX = coli * xAxis;
+					let baseY = rowi * yAxis;
+
+					let lastX = coli + 1;
+					let lastY = rowi + 1;
+
+					// D01——————D02 D11——————D12
+					// |        |   |        |
+					// |        |   |        |
+					// |        |   |        |
+					// D04——————D03 D14——————D13
+					// D21——————D22 D34——————D33
+					// |        |   |        |
+					// |        |   |        |
+					// |        |   |        |
+					// D24——————D23 D34——————D33
+
+					// 连续性问题
+					// 下标 +1 为 SIZE时，梯度计算的边界值等于开始值 。
+					// 如上 2 * 2 晶格中，若要使 该噪声首尾连续；则需要
+
+					// D01.x == D12.x => D01.x 为0 则 D12.x = 0
+					// D01.y == D24.y => D01.y 为0 则 D12.y = 0
+					// D01.xy == D33.xy => D01.xy 为0 则 D12.xy = 0
+
+					if (coli == SIZE - 1) {
+						lastX = 0;
+					}
+					if (rowi == SIZE - 1) {
+						lastY = 0;
+					}
+
+					// 每个晶格四个点位梯度值
+					const grd1 = grads(coli, rowi);
+					const grd2 = grads(lastX, rowi);
+					const grd3 = grads(lastX, lastY);
+					const grd4 = grads(coli, lastY);
+
+					const pZero = {
+						x: coli,
+						y: rowi
+					};
+					for (let y = 0; y < yAxis; y++) {
+						for (let x = 0; x < xAxis; x++) {
+							// 当前点位 在晶格中的uv位置
+							let uv = {
+								x: smooth2(x / (xAxis - 1)),
+								y: smooth2(y / (yAxis - 1))
+							};
+							let hue = noise([grd1, grd2, grd3, grd4], uv);
+							hue = (hue * 360) % 360;
+							const color = `hsl(${hue}, 100%, 50%)`;
+							// hue = hue * 0.5 + 0.5;
+							// hue = prefixHex(floor(hue * 255).toString(16));
+							hues.push(hue);
+							// const color = `#${hue}${hue}${hue}ff`;
+							ctx.save();
+							ctx.fillStyle = color;
+							// ctx.fillRect(baseX + x + coli * 1, baseY + y + rowi * 1, 1, 1);
+							ctx.fillRect(baseX + x, baseY + y, 1, 1);
+							ctx.restore();
+							ctx2.save();
+							ctx2.fillStyle = color;
+							ctx2.fillRect(baseX + x, baseY + y, 1, 1);
+							ctx2.restore();
+						}
+					}
+				}
+			}
+			// console.log(hues);
+		}
+		main();
+	</script>
+</html>

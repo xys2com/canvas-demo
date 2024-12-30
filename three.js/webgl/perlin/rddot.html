@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			position: absolute;
+			background: #1b3b4d;
+			/* border: 1px solid #fff; */
+		}
+	</style>
+	<body>
+		<canvas id="canvas" style="left: 0"></canvas>
+	</body>
+	<script src="./glsl-vec1.js"></script>
+	<script>
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const SIZE = 4;
+		const canvas = $("#canvas");
+		canvas.height = HEIGHT;
+		canvas.width = WIDTH;
+		const xAxis = WIDTH / SIZE;
+		const ctx = canvas.getContext("2d");
+
+		let baseY = HEIGHT / 2;
+		let logs = [];
+		ctx.moveTo(0, baseY);
+		const options = {
+			o: 10,
+			c: 4
+		};
+		for (let coli = 0; coli < SIZE; coli++) {
+			let baseX = coli * xAxis;
+			for (let x = 0; x < xAxis; x++) {
+				let ux = coli + x / (xAxis - 1);
+				ux = baseX + x == WIDTH - 1 ? 0 : ux;
+				// logs.push(ux);
+				let hue = fbm(ux, SIZE, options);
+				hue = hue * hue * hue + 0.6 * hue * hue + 0.5 * hue;
+				let _x = baseX + x;
+				// let y = hue * HEIGHT + baseY; // 落差大
+				let y = (hue * 0.5 + 0.5) * HEIGHT; // 落差小
+				ctx.fillStyle = "#fff";
+				ctx.fillRect(_x, y, 1, 1);
+				// ctx.lineTo(_x, y);
+			}
+		}
+		// ctx.strokeStyle = "#f00";
+		// ctx.stroke();
+		// console.log(logs);
+	</script>
+</html>

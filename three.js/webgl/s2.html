@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+			border: 1px solid #fff;
+		}
+	</style>
+	<body>
+		<canvas id="canvas"></canvas>
+	</body>
+	<script src="./color-function.js"></script>
+	<script>
+		const { sin, floor, sqrt, cos, abs } = Math;
+
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		const random = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				let a = max;
+				(max = min), (min = a);
+			}
+			// 有一个为小数
+			// 输出小数
+			const r = +min % 1 != 0 || +max % 1 != 0;
+			if (r) {
+				min *= 100000000;
+				max *= 100000000;
+			}
+			return (
+				(Math.floor(Math.random() * (max - min + 1)) + min) /
+				(r ? 100000000 : 1)
+			);
+		};
+	</script>
+	<script>
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const canvas = $("#canvas");
+		canvas.height = HEIGHT;
+		canvas.width = WIDTH;
+		const glctx = canvas.getContext("webgl");
+
+		const clearColor = (glctx, c) => {
+			let { r, g, b, a } = getRGBA(c);
+			r = r / 255;
+			g = g / 255;
+			b = b / 255;
+			a = a / 255;
+			return glctx.clearColor(r, g, b, a);
+		};
+
+		const clear = (glctx) => glctx.clear(glctx.COLOR_BUFFER_BIT);
+	</script>
+</html>

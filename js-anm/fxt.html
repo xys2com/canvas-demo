@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+
+	<body></body>
+	<script>
+		const random = function (n, r) {
+			if ((arguments.length < 2 && ((r = n), (n = 0)), n > r)) {
+				var a = r;
+				(r = n), (n = a);
+			}
+			return Math.floor(Math.random() * (r - n + 1)) + n;
+		};
+	</script>
+	<script>
+		// 分形树
+		// 输入 节点起点、父偏角、父长度
+    // 树分为，主干、树干、细枝
+		class Fractal {
+			// 节点起点，
+			constructor(x, y, _deg, _len) {}
+		}
+	</script>
+	<script>
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
+		canvas.width = 800;
+		canvas.height = 600;
+		document.body.appendChild(canvas);
+		let deg = 0;
+		function arccc() {
+			ctx.fillStyle = "#fff2";
+			ctx.fillRect(0, 0, 800, 600);
+			ctx.save();
+			ctx.translate(100, 100);
+			ctx.rotate((deg * Math.PI) / 180);
+			ctx.beginPath();
+			ctx.arc(0, 0, 30, 0, Math.PI / 12);
+			ctx.strokeStyle = "#f00";
+			ctx.stroke();
+			ctx.restore();
+			deg += 15;
+			window.requestAnimationFrame(arccc);
+		}
+		window.requestAnimationFrame(arccc);
+	</script>
+</html>

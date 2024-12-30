@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			position: absolute;
+			background: #000;
+			/* border: 1px solid #fff; */
+		}
+	</style>
+	<body>
+		<canvas id="canvas" style="left: 0"></canvas>
+		<!-- <canvas id="canvas2" style="left: 400px"></canvas> -->
+	</body>
+	<script src="./glslv2.js"></script>
+	<script src="../color-hex.js"></script>
+	<script>
+		// 点距
+		const distance = (d1, d2) =>
+			Math.sqrt((d2.x - d1.x) * (d2.x - d1.x) + (d2.y - d1.y) * (d2.y - d1.y));
+	</script>
+	<script>
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const SIZE = 4;
+		const canvas = $("#canvas");
+		canvas.height = HEIGHT;
+		canvas.width = WIDTH;
+		const ctx = canvas.getContext("2d");
+		const xAxis = WIDTH / SIZE;
+		const yAxis = HEIGHT / SIZE;
+		const CX = WIDTH / 2;
+		const CY = HEIGHT / 2;
+		const padding = 5;
+		ctx.fillStyle = "transparent";
+		// limitmax - limitmin  = offset
+		function randomDot(x, y, offset = 5) {
+			let off = offset / 2;
+			return {
+				x: x + random(-off, off),
+				y: y + random(-off, off)
+			};
+		}
+		function createLimit() {
+			const p1 = randomDot(0, 0);
+			const p2 = randomDot(WIDTH, 0);
+			const p3 = randomDot(WIDTH, HEIGHT);
+			const p4 = randomDot(0, HEIGHT);
+		}
+		function main() {
+			for (let rowi = 0; rowi < SIZE; rowi++) {
+				for (let coli = 0; coli < SIZE; coli++) {
+					let baseX = coli * xAxis;
+					let baseY = rowi * yAxis;
+
+					for (let y = 0; y < yAxis; y++) {
+						for (let x = 0; x < xAxis; x++) {
+							let uv = {
+								x: coli + x / (xAxis - 1),
+								y: rowi + y / (yAxis - 1)
+							};
+							uv = {
+								x: baseX + x == WIDTH - 1 ? 0 : uv.x,
+								y: baseY + y == HEIGHT - 1 ? 0 : uv.y
+							};
+							let hue = fbm(uv, SIZE);
+							let _x = baseX + x;
+							let _y = baseY + y;
+							// let hex = parseInt((hue * 0.5 + 0.5) * 255).toString(16);
+							// hex = prefixHex(hex);
+							// let color = `#ffffff`; // 决定灰度
+							let color = HEXMixin("#e45c90", "#f2e07e", 1 - _y / HEIGHT);
+							color = setHEXAlpha(color, hue * 0.5 + 0.5);
+							let d = distance({ x: _x, y: _y }, { x: CX, y: CY });
+							let rate = 1 - d / CX;
+							rate = hue + rate; // 决定形状/透明度
+							color = setHEXAlpha(color, rate);
+
+							ctx.save();
+							ctx.fillStyle = color;
+							ctx.fillRect(_x, _y, 1, 1);
+							ctx.restore();
+						}
+					}
+				}
+			}
+		}
+		(async () => {
+			await main();
+		})();
+	</script>
+</html>

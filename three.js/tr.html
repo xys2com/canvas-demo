@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+		<canvas id="canvas" width="500" height="300"></canvas>
+	</body>
+	<script>
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		const random = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				let a = max;
+				(max = min), (min = a);
+			}
+			// 有一个为小数
+			// 输出小数
+			const r = +min % 1 != 0 || +max % 1 != 0;
+			if (r) {
+				min *= 100000000;
+				max *= 100000000;
+			}
+			return (
+				(Math.floor(Math.random() * (max - min + 1)) + min) /
+				(r ? 100000000 : 1)
+			);
+		};
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const Size = 100;
+		const canvas = $("#canvas");
+		const ctx = canvas.getContext("2d");
+		canvas.height = HEIGHT;
+		canvas.width = WIDTH;
+		let _x = WIDTH / 2 - Size / 2;
+		let _y = HEIGHT / 2 - Size / 2;
+		let deg = random(0, 360) * (Math.PI / 180);
+		ctx.translate(WIDTH / 2, WIDTH / 2);
+		ctx.rotate(deg);
+		ctx.translate(-WIDTH / 2, -WIDTH / 2);
+		ctx.fillStyle = "#f00";
+		ctx.fillRect(_x, _y, Size, Size);
+	</script>
+</html>

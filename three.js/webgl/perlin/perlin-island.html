@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			position: absolute;
+			background: #1b3b4d;
+			/* border: 1px solid #fff; */
+		}
+	</style>
+	<body>
+		<canvas id="canvas" style="left: 0"></canvas>
+		<!-- <canvas id="canvas2" style="left: 400px"></canvas> -->
+	</body>
+	<script src="./glslv2.js"></script>
+	<script src="../color-hex.js"></script>
+	<script>
+		// 点距
+		const distance = (d1, d2) =>
+			Math.sqrt((d2.x - d1.x) * (d2.x - d1.x) + (d2.y - d1.y) * (d2.y - d1.y));
+	</script>
+	<script>
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const SIZE = 4;
+		const canvas = $("#canvas");
+		canvas.height = HEIGHT;
+		canvas.width = WIDTH;
+		const ctx = canvas.getContext("2d");
+		const xAxis = WIDTH / SIZE;
+		const yAxis = HEIGHT / SIZE;
+		const CX = WIDTH / 2;
+		const CY = HEIGHT / 2;
+		ctx.fillStyle = "transparent";
+		function main() {
+			for (let rowi = 0; rowi < SIZE; rowi++) {
+				for (let coli = 0; coli < SIZE; coli++) {
+					let baseX = coli * xAxis;
+					let baseY = rowi * yAxis;
+
+					for (let y = 0; y < yAxis; y++) {
+						for (let x = 0; x < xAxis; x++) {
+							let uv = {
+								x: coli + x / (xAxis - 1),
+								y: rowi + y / (yAxis - 1)
+							};
+							uv = {
+								x: baseX + x == WIDTH - 1 ? 0 : uv.x,
+								y: baseY + y == WIDTH - 1 ? 0 : uv.y
+							};
+							let hue = fbm(uv, SIZE);
+							let hex = parseInt((hue * 0.5 + 0.5) * 255).toString(16);
+							hex = prefixHex(hex);
+							// let color = `#ffffff${hex}`;
+							let color = `#e0af31${hex}`;
+							let _x = baseX + x;
+							let _y = baseY + y;
+							let d = distance({ x: _x, y: _y }, { x: CX, y: CY });
+							const gapx = random(0.5, 1.5) + 5;
+							const gapy = random(0.5, 1.5) + 5;
+
+							let rate = 1 - d / CX;
+							rate = rate > 1 ? 1 : rate < 0 ? 0 : rate;
+							rate = (hue + rate) / 2;
+							color = setHEXAlpha(color, rate);
+							ctx.save();
+							color = HEXMixin(color, "#000000");
+							ctx.fillStyle = color;
+							ctx.fillRect(_x, _y, 1, 1);
+							if (rate > 0.15) {
+								ctx.fillStyle = `#e0af3188`;
+								ctx.fillRect(_x, _y, 1, 1);
+							}
+							if (rate > 0.3) {
+								ctx.fillStyle = `#e0af31aa`;
+								ctx.fillRect(_x, _y, 1, 1);
+							}
+							if (rate > 0.5) {
+								ctx.fillStyle = `#e0af31`;
+								ctx.fillRect(_x, _y, 1, 1);
+							}
+							ctx.restore();
+						}
+					}
+				}
+			}
+		}
+		main();
+		let num = SIZE * 2;
+		let GAP = WIDTH / num;
+		let color = "#0008";
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 0.5;
+		for (let i = 0; i < num; i++) {
+			ctx.beginPath();
+			ctx.moveTo(GAP * i, 0);
+			ctx.lineTo(GAP * i, HEIGHT);
+			ctx.moveTo(0, GAP * i);
+			ctx.lineTo(WIDTH, GAP * i);
+			ctx.closePath();
+			ctx.stroke();
+		}
+	</script>
+</html>

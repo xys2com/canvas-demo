@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>sky</title>
+	</head>
+	<style>
+		body,
+		html {
+			height: 100vh;
+			padding: 0;
+			margin: 0;
+			color: #575447;
+			background: #000;
+		}
+	</style>
+	<body></body>
+	<script src="./e-manager.js"></script>
+	<script src="./handv0.13.js"></script>
+	<script src="./color-function.js"></script>
+	<script src="./cloud.js"></script>
+	<script>
+		const MTF_MN = [5, 6]; // 早晨
+		const MTF_DT = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16]; // 白天
+		const MTF_DK = [17, 18];
+		const MTF_NT = [0, 1, 2, 3, 4, 19, 20, 21, 22, 23]; // 夜晚
+		const ColorGroup = {
+			morning: {
+				outer: "#e95226",
+				inner: "#f2e07e"
+			},
+			// 霞
+			morning_rosy: {
+				outer: "#e45c90",
+				inner: "#f2e07e"
+			},
+			daytime: {
+				// outer: "#0b2070",
+				outer: "#39b9e0",
+				inner: "#eaf8f8"
+			},
+			dusk: {
+				outer: "#fdbe7d",
+				inner: "#fddebd"
+			},
+			// 霞
+			dusk_rosy: {
+				outer: "#3e1274",
+				inner: "#e88a68"
+			},
+			night: {
+				outer: "#00062a",
+				inner: "#004999"
+			}
+		};
+
+		// 云的原色
+		const CLOUD_COLOR = "#fff";
+
+		// night clouds colors
+		// 晚上云的颜色
+		const N_C_CS = {
+			start: "#575447",
+			end: "#616372",
+			side: "transparent"
+		};
+
+		const WIDTH = document.body.offsetWidth;
+		const HEIGHT = document.body.offsetHeight;
+		const CX = WIDTH / 2;
+		const CY = HEIGHT / 2; //(HEIGHT / 3) * 2;
+
+		function getTimeFrameColors(hours, rosy) {
+			hours = hours % 23;
+			const _hours = hours || hours == 0 ? hours : new Date().getHours();
+			const is_rosy = rosy || random(1, 2) == 1; // 50% 出现霞光
+			if (MTF_MN.includes(_hours))
+				return is_rosy ? ColorGroup["morning_rosy"] : ColorGroup["morning"];
+			if (MTF_DT.includes(_hours)) return ColorGroup["daytime"];
+			if (MTF_DK.includes(_hours))
+				return is_rosy ? ColorGroup["dusk_rosy"] : ColorGroup["dusk"];
+			if (MTF_NT.includes(_hours)) return ColorGroup["night"];
+		}
+
+		function getTimeFrameCloudsColors({ hours, rosy }) {
+			const { outer, inner } = getTimeFrameColors(hours, rosy);
+
+			let baseRate = random(0.25, 0.75);
+			if (MTF_MN.includes(hours) || MTF_DK.includes(hours)) {
+				const start = outer;
+				const end = inner;
+
+				let side = mixinColors(CLOUD_COLOR, inner);
+				side = setColorAlpha(side, Math.pow(baseRate, 2));
+				return {
+					start: start,
+					end: end,
+					side: "transparent"
+				};
+			}
+
+			if (MTF_DT.includes(hours)) {
+				const start = CLOUD_COLOR;
+				const end = ["#fff", "#eee", "#ddd", "#ccc"][random(0, 3)];
+
+				let side = mixinColors(CLOUD_COLOR, inner);
+				side = setColorAlpha(side, Math.pow(baseRate, 2));
+				return {
+					start: setColorAlpha(start, 0.25),
+					end: setColorAlpha(end, 0.25),
+					side
+				};
+			}
+			// 晚上
+			// 使用 N_C_CS
+			if (MTF_NT.includes(hours)) {
+				return {
+					start: setColorAlpha(N_C_CS.start, 0.25),
+					end: setColorAlpha(N_C_CS.end, 0.25),
+					side: N_C_CS.side
+				};
+			}
+		}
+		const clouds = new Clouds({
+			x: 0,
+			y: 0,
+			width: WIDTH,
+			height: HEIGHT
+		});
+		const ctx = clouds.getCtx();
+		// const skylineargradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+		const maxDis = distance({ x: 0, y: 0 }, { x: CX, y: CY }) * 1.5;
+		let hours = new Date().getHours();
+		function getAngle({ x: x1, y: y1 }, { x: x2, y: y2 }) {
+			const dot = x1 * x2 + y1 * y2;
+			const det = x1 * y2 - y1 * x2;
+			const angle = (Math.atan2(det, dot) / Math.PI) * 180;
+			return Math.round(angle + 360) % 360;
+		}
+		function createCloud({ hours, now, total, colors }) {
+			hours = hours % 23;
+			const _hours = hours || hours == 0 ? hours : new Date().getHours();
+			total = total < 10 ? 10 : 10;
+			const limit = WIDTH / total;
+			const $x = limit * now + random(-limit, limit);
+			let height = random(300, 800);
+			let width = random(400, 1900);
+
+			let x = $x - width / 2;
+			let $y = random(0, HEIGHT);
+			let y = $y - height / 4;
+			let baseRate = 1 - $y / HEIGHT;
+			baseRate = baseRate < 0.25 ? 0.25 : baseRate;
+
+			height = height * baseRate;
+			width = width * baseRate;
+			x = x * baseRate;
+			let deg = getAngle(
+				{ x: x + width / 2, y: y + height / 2 },
+				{ x: WIDTH / 2, y: HEIGHT / 2 }
+			);
+			if (deg > 90) {
+				deg = deg - 360;
+			}
+			deg = deg / random(5, 10);
+			const rotate = deg * (Math.PI / 180);
+			const {
+				canvas,
+				id: cloudId,
+				cloud
+			} = clouds.createRdCloud({
+				x,
+				y,
+				rotate,
+				width,
+				height,
+				skyHeight: HEIGHT,
+				skyWidth: WIDTH,
+				colors
+			});
+		}
+		async function setCourdColors(hours, gradient) {
+			const colors = getTimeFrameCloudsColors({ hours, rosy: true });
+			await clouds.setCloudColors(colors);
+			renderSky(gradient);
+		}
+		let testH = 6;
+		let currentColors = getTimeFrameColors(testH, true);
+		let renderCount = 0;
+		function testRRR(h) {
+			testH = h || testH;
+			const count = 20;
+
+			const colors = getTimeFrameCloudsColors({
+				hours: testH,
+				rosy: true
+			});
+			for (let i = 0; i < count; i++) {
+				createCloud({
+					hours: testH,
+					total: count,
+					now: i,
+					colors
+				});
+			}
+			main(testH);
+		}
+		testRRR();
+
+		function getSkyBackground({ hours, type = 1, count, farme }) {
+			let gradient;
+
+			const { outer: preout, inner: preinner } = currentColors;
+			const { outer, inner, side } = getTimeFrameColors(hours, true);
+
+			const innerMixin = mixinColors(inner, preinner, count / farme);
+			const outerMixin = mixinColors(outer, preout, count / farme);
+
+			if (type == 1) {
+				gradient = ctx.createRadialGradient(CX, HEIGHT, 0, HEIGHT, CY, maxDis);
+				gradient.addColorStop(0, "#fff");
+				gradient.addColorStop(0.2, innerMixin);
+				gradient.addColorStop(0.5, mixinColors(innerMixin, outerMixin));
+				gradient.addColorStop(1, outerMixin);
+			} else if (type == 2) {
+				gradient = ctx.createLinearGradient(0, 0, 1, HEIGHT);
+				gradient.addColorStop(0, outerMixin);
+				gradient.addColorStop(0.5, mixinColors(innerMixin, outerMixin));
+				gradient.addColorStop(0.8, innerMixin);
+				gradient.addColorStop(1, "#fff");
+			}
+			return gradient;
+		}
+		function renderClouds() {
+			const ctx = clouds.getCtx();
+			clouds.Clouds.forEach((cloud) => {
+				const { x: _x, y: _y, width: _width, height: _height, rotate } = cloud;
+				ctx.save();
+				const cx = cloud.x + cloud.content.width / 2;
+				const cy = cloud.y + cloud.content.height / 2;
+
+				ctx.translate(cx, cy);
+				ctx.rotate(rotate);
+				ctx.translate(-cx, -cy);
+				ctx.drawImage(
+					cloud.content,
+					_x,
+					_y,
+					cloud.content.width,
+					cloud.content.height
+				);
+				ctx.restore();
+			});
+		}
+
+		function renderSky(gradient) {
+			ctx.save();
+			ctx.fillStyle = gradient;
+			ctx.fillRect(0, 0, WIDTH, HEIGHT);
+			ctx.restore(); //
+			renderClouds();
+		}
+		function main(hours) {
+			const farme = 120;
+			let count = 0;
+			const { outer: preout, inner: preinner } = currentColors;
+			const { outer, inner, side } = getTimeFrameColors(hours, true);
+			if (!renderCount) {
+				let gradient = getSkyBackground({
+					hours,
+					type: 1,
+					count: farme,
+					farme
+				});
+				renderSky(gradient);
+				renderCount++;
+				currentColors = {
+					outer,
+					inner,
+					side
+				};
+			} else {
+				let itv = setInterval(() => {
+					let gradient = getSkyBackground({
+						hours,
+						type: 1,
+						count,
+						farme
+					});
+					renderSky(gradient);
+					count++;
+					if (count >= farme) {
+						setCourdColors(hours, gradient);
+						renderCount++;
+						currentColors = {
+							outer,
+							inner,
+							side
+						};
+						clearInterval(itv);
+					}
+				}, 1e3 / 60);
+			}
+		}
+
+		setTimeout(() => {
+			let _hours = [0, 12, 18][random(0, 2)];
+			main(18);
+		}, 2000);
+	</script>
+</html>

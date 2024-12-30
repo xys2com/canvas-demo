@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			left: 0;
+			right: 0;
+		}
+	</style>
+	<body>
+		<input
+			type="range"
+			onchange="rateChange(this.value)"
+			step="1"
+			value="45"
+			min="0"
+			max="60"
+		/>
+	</body>
+	<script src="./freehand/color-function.js"></script>
+	<script>
+		function $(s) {
+			let el = document.querySelectorAll(s);
+			return el.length === 1 ? el[0] : el;
+		}
+		function random(min, max) {
+			if (arguments.length < 2) {
+				max = min;
+				min = 0;
+			}
+			if (min > max) {
+				var hold = max;
+				max = min;
+				min = hold;
+			}
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		function degToArc(deg) {
+			return ((Math.PI * 2) / 360) * deg;
+		}
+		function arcToDeg(arc) {
+			return arc / ((Math.PI * 2) / 360);
+		}
+
+		// 根据角度 取圆上的一点
+		const getPointOnCircle = (x, y, r, deg) => {
+			var rad = deg * (Math.PI / 180);
+			var x = x + r * Math.cos(rad);
+			var y = y + r * Math.sin(rad);
+			return { x, y };
+		};
+		function dot(x, y, ctx) {
+			// ctx.beginPath();
+			// ctx.arc(x, y, r, 0, 2 * Math.PI);
+			// ctx.fillStyle = "#9cdcfe";
+			// ctx.fill();
+			// ctx.closePath();
+
+			ctx.save();
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.arc(x, y, 3, 0, 2 * Math.PI);
+			ctx.closePath();
+			ctx.fillStyle = "#f00";
+			const text = name || `${x.toFixed(2)},${y.toFixed(2)}`;
+			ctx.fill();
+			ctx.fillText(text, x, y);
+			ctx.closePath();
+			ctx.restore();
+		}
+	</script>
+	<script>
+		const RATE = 2; // 清晰度
+		const translateScale = 1 / RATE; // 缩放比
+		const SIZE = 300 * RATE; // 绘制大小
+		const BEGIN_DEG = 180; // 起点角度
+		const END_DEG = 360; // 终点角度
+		const smoothLineWidth = 2 * RATE; // 平滑线宽
+		const smoothLineColor = "#fff8"; // 平滑线颜
+
+		const canvas = document.createElement("canvas");
+		const offsetRate = ((1 - 1 / RATE) * 100) / 2; // 偏移位置
+		canvas.style.transform = `translate(-${offsetRate}%, -${offsetRate}%) scale(${translateScale})`;
+
+		document.body.appendChild(canvas);
+		const ctx = canvas.getContext("2d");
+
+		ctx.imageSmoothingEnabled = true;
+		// 默认 左侧 为 起点； 180deg
+		// 右侧终点 360deg
+		// 总度数 = 180 + offsetDeg * 2
+		const arcwidth = 40 * RATE; // 圆弧宽度
+		const stepDeg = 2; // 步进角度
+		canvas.width = SIZE;
+		canvas.height = SIZE;
+		const padding = 12 * RATE; // 边距
+		const radius = SIZE / 2 - padding; // 半径
+		const cx = SIZE / 2; // 中心
+		const cy = SIZE / 2; //
+		let offsetDeg = 45; // 对称偏移角度
+		const offsetArc = degToArc(offsetDeg); // 偏移弧度
+		const beginColor = "#f00"; // 起点颜色
+		const endColor = "#00f"; // 终点颜色
+		let totalDeg = END_DEG - BEGIN_DEG + offsetDeg * 2; // 总角度
+
+		let count = parseInt(totalDeg / stepDeg); // 总的绘制步数
+
+		function rateChange(v) {
+			ctx.clearRect(0, 0, SIZE, SIZE);
+			offsetDeg = v;
+			totalDeg = END_DEG - BEGIN_DEG + offsetDeg * 2; // 总角度
+			count = parseInt(totalDeg / stepDeg); // 总的绘制步数
+			main();
+		}
+		function main() {
+			seRadius(); // 绘制起始/终点圆角
+			for (let i = 0; i < count; i++) {
+				diffFill(i); // 微分绘制
+			}
+		}
+		main();
+		// 头尾圆角
+		function seRadius() {
+			let { x: x1, y: y1 } = getPointOnCircle(cx, cy, radius, 180 - offsetDeg);
+			let { x: x2, y: y2 } = getPointOnCircle(
+				cx,
+				cy,
+				radius - arcwidth,
+				BEGIN_DEG - offsetDeg + 1
+			);
+			let { x: x3, y: y3 } = getPointOnCircle(cx, cy, radius, offsetDeg);
+			let { x: x4, y: y4 } = getPointOnCircle(
+				cx,
+				cy,
+				radius - arcwidth,
+				offsetDeg - 1
+			);
+			const cornerx = (x1 + x2) / 2;
+			const cornery = (y1 + y2) / 2;
+			const arc1 = degToArc(BEGIN_DEG - offsetDeg);
+			const arc2 = degToArc(END_DEG - offsetDeg);
+			ctx.save();
+			ctx.beginPath();
+
+			ctx.lineWidth = smoothLineWidth;
+			ctx.arc(cornerx, cornery, arcwidth / 2, arc1, arc2, 1);
+			ctx.strokeStyle = smoothLineColor;
+			ctx.stroke();
+			ctx.fillStyle = beginColor;
+			ctx.fill();
+
+			const cornerx2 = (x3 + x4) / 2;
+			const cornery2 = (y3 + y4) / 2;
+			const arc3 = degToArc(offsetDeg);
+			const arc4 = degToArc(BEGIN_DEG + offsetDeg);
+			ctx.beginPath();
+			ctx.arc(cornerx2, cornery2, arcwidth / 2, arc3, arc4);
+			ctx.strokeStyle = smoothLineColor;
+			ctx.stroke();
+			ctx.fillStyle = endColor;
+			ctx.fill();
+			ctx.restore();
+			sideLine();
+		}
+
+		// 绘制边线
+		// 边缘平滑
+		function sideLine() {
+			ctx.save();
+			ctx.strokeStyle = smoothLineColor;
+			ctx.lineWidth = smoothLineWidth;
+			ctx.beginPath();
+			ctx.arc(
+				cx,
+				cy,
+				radius,
+				degToArc(BEGIN_DEG - offsetDeg),
+				degToArc(END_DEG + offsetDeg)
+			);
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.stroke();
+			ctx.arc(
+				cx,
+				cy,
+				radius - arcwidth,
+				degToArc(BEGIN_DEG - offsetDeg),
+				degToArc(END_DEG + offsetDeg)
+			);
+			ctx.stroke();
+			ctx.restore();
+		}
+
+		// 绘制圆弧块
+		function diffFill(curr) {
+			// 起始角度
+			let curr_s_deg = BEGIN_DEG - offsetDeg + curr * stepDeg;
+			if (curr) {
+				// 偏移1° 填充空白
+				curr_s_deg -= 1;
+			}
+			// 下一个微分角度
+			const curr_e_deg = BEGIN_DEG - offsetDeg + curr * stepDeg + stepDeg;
+
+			ctx.beginPath();
+			const s_arc = degToArc(curr_s_deg);
+			const e_arc = degToArc(curr_e_deg);
+
+			ctx.arc(cx, cy, radius, s_arc, e_arc);
+			// ctx 自动从当前绘制的终点绘制到下一绘制的起点，所以逆时针绘制内径弧线
+			ctx.arc(cx, cy, radius - arcwidth, e_arc, s_arc, 1);
+			// 关闭路径 自动从最终终点连接到beginPath的起点
+			ctx.closePath();
+
+			// 根据步进值与总步数比值 混合起点到终点的颜色
+			const mixColor = mixinColors(beginColor, endColor, 1 - curr / count);
+			ctx.fillStyle = mixColor;
+			ctx.fill();
+		}
+	</script>
+</html>

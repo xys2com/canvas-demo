@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			background: #000;
+		}
+	</style>
+	<body>
+		<canvas id="test"></canvas>
+	</body>
+	<script>
+		// 该步骤较复杂，但可以对圆、点、线、角度、弧度、三角函数有更多的思考
+
+		// ! 根据某个角度计算圆的切线
+		// ! 以切点为起点 设置步进值，计算每个步进距离切线的平行线
+		// ! 再记录所有平行线与圆的交点
+		const canvas = document.getElementById("test");
+		const ctx = canvas.getContext("2d");
+		const WIDTH = 500;
+		const HEIGHT = 500;
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		let img = new Image();
+		img.src = "./ajax.png";
+		img.onload = function () {
+			const width = img.width;
+			const height = img.height;
+			ctx.drawImage(img, 0, 0, width, height, -1, -1, width, height);
+			let himg = ctx.getImageData(0, 0, width, height);
+			let data = himg.data;
+			let pixels = data.length;
+			let arr = [];
+			for (let i = 0; i < pixels; i += 4) {
+				let r = data[i],
+					g = data[i + 1],
+					b = data[i + 2],
+					a = data[i + 3];
+				arr.push({
+					r,
+					g,
+					b,
+					a
+				});
+				if (r == 255 && g == 255 && b == 255 && a == 255) {
+					data[i] = 0;
+					data[i + 1] = 0;
+					data[i + 2] = 0;
+					data[i + 3] = 0;
+				} else if (r == 0 && g == 0 && b == 0 && a == 255) {
+					data[i] = 181;
+					data[i + 1] = 154;
+					data[i + 2] = 133;
+					data[i + 3] = 255;
+				} else {
+					data[i] = data[i];
+					data[i + 1] = data[i + 1];
+					data[i + 2] = data[i + 2];
+					data[i + 3] = data[i + 3] / 1.5;
+				}
+			}
+
+			let c = document.createElement("canvas");
+			let _ctx = c.getContext("2d");
+			c.width = width;
+			c.height = height;
+			_ctx.putImageData(himg, 0, 0);
+			document.body.appendChild(c);
+		};
+	</script>
+</html>

@@ -20,7 +20,7 @@ const graphSet = [
 	{
 		category: "rect",
 		position: [50, 50, 130, 60],
-		fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
+		fillType: "fill", // mix 包含图形填充和描线填充 mix = fill & line
 		draggable: true,
 		clickable: true,
 		onclick: () => {

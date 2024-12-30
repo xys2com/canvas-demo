@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		canvas {
+			position: absolute;
+			background: #000;
+			/* border: 1px solid #fff; */
+		}
+	</style>
+	<body>
+		<canvas id="canvas" style="left: 0"></canvas>
+		<!-- <canvas id="canvas2" style="left: 400px"></canvas> -->
+	</body>
+	<script src="./glslv2.js"></script>
+	<script>
+		const WIDTH = 400;
+		const HEIGHT = 400;
+		const SIZE = 10; //划分为 SIZE * SIZE 的晶格
+		const canvas = $("#canvas");
+		// const canvas2 = $("#canvas2");
+		canvas.height = HEIGHT * 2;
+		canvas.width = WIDTH * 2;
+		// canvas2.height = HEIGHT;
+		// canvas2.width = WIDTH;
+		const ctx = canvas.getContext("2d");
+		// const ctx2 = canvas2.getContext("2d");
+		const xAxis = WIDTH / SIZE;
+		const yAxis = HEIGHT / SIZE;
+
+		let gradient = ctx.createLinearGradient(0, 0, 1, HEIGHT);
+		gradient.addColorStop(0, "#e45c90");
+		gradient.addColorStop(1, "#f2e07e");
+		ctx.fillStyle = gradient;
+		ctx.fillRect(WIDTH, 0, 2 * WIDTH, HEIGHT);
+
+		let gradient2 = ctx.createLinearGradient(0, HEIGHT, 1, 2 * HEIGHT);
+		gradient2.addColorStop(0, "#3e1274");
+		gradient2.addColorStop(1, "#e88a68");
+		ctx.fillStyle = gradient2;
+		ctx.fillRect(WIDTH, HEIGHT, 2 * WIDTH, 2 * HEIGHT);
+		function main() {
+			let consoles = [];
+			let consoles2 = [];
+			for (let rowi = 0; rowi < SIZE; rowi++) {
+				for (let coli = 0; coli < SIZE; coli++) {
+					let baseX = coli * xAxis;
+					let baseY = rowi * yAxis;
+
+					for (let y = 0; y < yAxis; y++) {
+						for (let x = 0; x < xAxis; x++) {
+							// 当前点位 在晶格中的uv位置
+							let uv = {
+								x: coli + x / (xAxis - 1),
+								y: rowi + y / (yAxis - 1)
+							};
+							uv = {
+								x: baseX + x == WIDTH - 1 ? 0 : uv.x,
+								y: baseY + y == WIDTH - 1 ? 0 : uv.y
+							};
+							// consoles2.push(y / (yAxis - 1));
+
+							let hue = fbm(uv, SIZE);
+
+							// hue 色值显示
+							// hue = hue * 360;
+							// const color = `hsl(${hue}, 100%, 50%)`;
+
+							let hex = parseInt((hue * 0.5 + 0.5) * 255).toString(16);
+							hex = prefixHex(hex);
+							// 灰度显示
+							// const color = `#${hex}${hex}${hex}`;
+							// 纯白色噪点
+							const color = `#ffffff${hex}`;
+
+							consoles.push(color);
+							ctx.save();
+							ctx.fillStyle = color;
+							ctx.fillRect(baseX + x, baseY + y, 1, 1);
+							ctx.fillRect(WIDTH + baseX + x, baseY + y, 1, 1);
+							ctx.fillRect(baseX + x, HEIGHT + baseY + y, 1, 1);
+							ctx.fillRect(WIDTH + baseX + x, HEIGHT + baseY + y, 1, 1);
+							ctx.restore();
+						}
+					}
+				}
+			}
+			// console.log(consoles);
+			// console.log(consoles2);
+		}
+		main();
+	</script>
+</html>

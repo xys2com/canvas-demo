@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		body,
+		html {
+			height: 100vh;
+			padding: 0;
+			margin: 0;
+			color: #575447;
+			background: #000;
+		}
+	</style>
+	<body></body>
+	<script src="./e-manager.js"></script>
+	<script src="./color-function.js"></script>
+	<script src="./skyv2.js"></script>
+	<script>
+		const WIDTH = document.body.offsetWidth;
+		const HEIGHT = document.body.offsetHeight;
+		let IMAGE = new Image();
+		IMAGE.src = "./cloud2.png";
+		async function main(h) {
+			let testH = h || 0;
+			const count = 20;
+			const sky = new Sky({
+				x: 0,
+				y: 0,
+				hours: testH,
+				width: WIDTH,
+				height: HEIGHT
+			});
+			await sky.renderSky();
+			await sky.createClouds(count);
+		}
+
+		IMAGE.onload = () => {
+			main(6);
+		};
+	</script>
+</html>

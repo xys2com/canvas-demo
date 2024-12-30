@@ -207,8 +207,8 @@
 
 			void main() {
 			  vUv = uv;
-			  float t = time*.5;// + sin(time) * .2;
-			  float t2 = time*.1 + cos(time * .2) * .05;
+			  float t = time*.25;// + sin(time) * .2;
+			  float t2 = time*.25 + cos(time * .2) * .05;
 			  vec2 pos = vUv * (2.0 + vUv.y);
 
 			  vec2 displacement = vec2(t2, t) + (2.0 + mousePosition * .5);

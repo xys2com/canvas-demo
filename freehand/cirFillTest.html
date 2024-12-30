@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Scrip hand v0.13</title>
+	</head>
+	<style>
+		body {
+			background: #000;
+			color: #00eeffab;
+		}
+		.test-canvas {
+			border: 1px solid #fff;
+		}
+	</style>
+	<body></body>
+	<script src="./graphData.js"></script>
+	<script src="./tween.js"></script>
+	<script src="./event-manager.js"></script>
+	<script src="./handv0.13.js"></script>
+	<script>
+		const hands = new HandDraw({
+			x: 0,
+			y: 0,
+			width: 1920,
+			height: 800,
+			// 设置整体色
+			colors: {
+				side: "#fff",
+				fill: "#00eeff66",
+				line: "#c678dd"
+			},
+			zIndex: 1
+		});
+
+		const data1 = {
+			category: "circle",
+			x: 120,
+			y: 260,
+			r: 50,
+			clickable: true,
+			onclick: () => {
+				alert("可点击的，混合填充双线圆形");
+			},
+			double: true, // 边线单线
+			fillType: "fill", // mix 包含图形填充和描线填充 mix = fill & line
+			fillDeg: 76, // 描线填充和混合填充时 扫描线偏转角
+			fillGap: 10 // 描线填充和混合填充时 扫描线间距
+			// colors: { side: "#fff", line: "#a05", fill: "#0066fe33" }
+		};
+		const data2 = {
+			category: "circle",
+			x: 120,
+			y: 400,
+			r: 50,
+			double: false, // 边线单线
+			operability: false, // 可操作（为false，点击与拖动都无效）
+			fillType: "line", // mix 包含图形填充和描线填充 mix = fill & line
+			// fillDeg: 0, // 描线填充和混合填充时 扫描线偏转角
+			fillGap: 8, // 描线填充和混合填充时 扫描线间距
+			colors: { side: "#ff0", line: "#a05", fill: "#873329" }
+		};
+		hands.createCircle(data1);
+		// hands.createCircle(data2);
+	</script>
+</html>

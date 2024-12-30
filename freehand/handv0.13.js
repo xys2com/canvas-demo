@@ -30,106 +30,8 @@ const random = function (min, max) {
 		(Math.floor(Math.random() * (max - min + 1)) + min) / (r ? 100000000 : 1)
 	);
 };
-// 16 to hsl
-function hexToHsl(hex, type = 1) {
-	// 去除#号并分割RGB部分
-	var rgb = hex.replace("#", "").match(/[0-9a-f]{2}/g);
-
-	// 计算红、绿、蓝三原色的比例
-	var r = parseInt(rgb[0], 16) / 255;
-	var g = parseInt(rgb[1], 16) / 255;
-	var b = parseInt(rgb[2], 16) / 255;
-
-	// 最大/小值及其对应的索引
-	var maxColor = Math.max(r, g, b),
-		minColor = Math.min(r, g, b);
-	var maxIndex = r === maxColor ? 0 : g === maxColor ? 1 : 2;
-	var minIndex = r === minColor ? 0 : g === minColor ? 1 : 2;
-
-	// 计算色相
-	var hue;
-	if (maxColor === minColor) {
-		hue = 0; // 无色调
-	} else {
-		switch (maxIndex - minIndex) {
-			case 0:
-				hue = ((g - b) / (maxColor - minColor)) * 60;
-				break;
-			case 1:
-				hue = ((g - r) / (maxColor - minColor)) * 60 + 120;
-				break;
-			case 2:
-				hue = ((b - g) / (maxColor - minColor)) * 60 + 240;
-				break;
-		}
-
-		if (hue < 0) {
-			hue += 360;
-		}
-	}
-
-	// 计算饱和度
-	var saturation =
-		maxColor !== 0 && maxColor !== 1
-			? (((maxColor - minColor) / maxColor) * 100).toFixed()
-			: 0;
-
-	// 计算亮度
-	var lightness = ((maxColor + minColor) / 2) * 100;
-	return type == 1
-		? `hsl(${hue}, ${saturation}%, ${lightness}%)`
-		: [hue, saturation, lightness];
-}
-// hsl to 16
-function hslToHex(p) {
-	let h, s, l;
-	if (Array.isArray(p)) {
-		[h, s, l] = p;
-	} else {
-		const str = p;
-		const start = p.indexOf("(") + 1;
-		const end = p.indexOf(")");
-		const arr = str.substring(start, end).split(",");
-		h = +arr[0].trim() / 360;
-		[s, l] = arr.filter((e, i) => i).map((s) => +s.trim().split("%")[0] / 100);
-	}
-
-	var r, g, b;
-
-	if (s === 0) {
-		r = g = b = l * 255; // HSL中的L就是RGB中的灰度值
-	} else {
-		var hue2rgb = function (p, q, t) {
-			if (t < 0) t += 1;
-			if (t > 1) t -= 1;
-			if (t < 1 / 6) return p + (q - p) * 6 * t;
-			if (t < 1 / 2) return q;
-			if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-			return p;
-		};
-
-		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-		var p = 2 * l - q;
-
-		r = hue2rgb(p, q, h + 1 / 3);
-		g = hue2rgb(p, q, h);
-		b = hue2rgb(p, q, h - 1 / 3);
-	}
-
-	// 将RGB值转换为16进制
-	r = Math.round(r * 255).toString(16);
-	g = Math.round(g * 255).toString(16);
-	b = Math.round(b * 255).toString(16);
-
-	// 确保每个颜色都有两位十六进制数（如果需要的话，前面补0）
-	r = r.length === 1 ? "0" + r : r;
-	g = g.length === 1 ? "0" + g : g;
-	b = b.length === 1 ? "0" + b : b;
-
-	return "#" + r + g + b;
-}
-
-const randomId = () => Math.random().toString(32).slice(-8);
+const randomId = (prefix = "", suffix = "") =>
+	`${prefix}${Math.random().toString(32).slice(-8)}${suffix}`;
 
 const isPointInPolygon = (point, polygon, log) => {
 	//下述代码来源：http://paulbourke.net/geometry/insidepoly/，进行了部分修改
@@ -505,7 +407,7 @@ const HANDLE = {
 				{ x: this.handle.mousePitchGraph.x, y: this.handle.mousePitchGraph.y },
 				{ x: clientX, y: clientY }
 			);
-			isInGraph = dis <= cir.r;
+			isInGraph = dis <= this.handle.mousePitchGraph.r;
 		}
 
 		if (!isInGraph) {
@@ -589,7 +491,7 @@ const HANDLE = {
 					},
 					{ x: clientX, y: clientY }
 				);
-				isInGraph = dis <= cir.r;
+				isInGraph = dis <= this.handle.mousePitchGraph.r;
 			}
 			let onActive = this.isOnActive(this.handle.mousePitchGraph.id);
 			if (isInGraph && this.handle.mousePitchGraph.clickable && !onActive)
@@ -795,12 +697,13 @@ const COMMON = {
 
 	// 此处id是不刷新的图形的id
 	// 同一帧 只允许刷新一次 多个方法调用的时候
-	async refresh(id) {
+	async refresh(id, context) {
 		const now = Date.now();
 		const ms = now - this.onRefreshTime;
 		if (ms < 16) return;
+		const ctx = context || this.ctx;
 		this.onRefreshTime = now;
-		this.clear();
+		this.clear(ctx);
 		this.refreshAllLine(id);
 		this.refreshAllGraph(id);
 		this.refreshAllCircles(id);
@@ -1283,6 +1186,7 @@ const GRAPH = {
 
 		graph.x = x;
 		graph.y = y;
+		graph.offset = offset;
 		graph.fillType = fillType;
 		graph.fillDeg = ["line", "mix"].includes(fillType) ? fillDeg : 0;
 		fillGap = fillGap <= 0 ? 1 : fillGap;
@@ -1339,13 +1243,53 @@ const GRAPH = {
 				const { zoom, zoomPoints, points } = graph;
 				const path = zoom == 1 ? points : zoomPoints || points;
 				path.map((e, i) => {
-					if (i == 0) ctx.moveTo(e.x, e.y);
-					else ctx.lineTo(e.x, e.y);
+					if (i == 0)
+						ctx.moveTo(
+							e.x + random(-graph.offset, -graph.offset),
+							e.y + random(-graph.offset, -graph.offset)
+						);
+					else
+						ctx.lineTo(
+							e.x + random(-graph.offset, -graph.offset),
+							e.y + random(-graph.offset, -graph.offset)
+						);
 				});
 				ctx.lineTo(path[0].x, path[0].y);
 			} else if (graph.type == "circle") {
-				const r = graph.r * graph.zoom;
-				ctx.arc(graph.x, graph.y, r, 0, Math.PI * 2);
+				// const r = graph.r * graph.zoom;
+				// ctx.arc(graph.x, graph.y, r, 0, Math.PI * 2);
+
+				const { zoom, zoomPoints, points: _points } = graph;
+				const points = zoom == 1 ? _points : zoomPoints || _points;
+				const len = points.length;
+				let _pts1 = deepClone(points);
+				let d1, d2, d3, d4, d5, d6, d7, d8;
+				if (len === 16) {
+					let _pts2 = _pts1.splice(len / 2, len / 2);
+					d1 = _pts1[0];
+					d2 = _pts2[1];
+					d3 = _pts1[2];
+					d4 = _pts2[3];
+					d5 = _pts1[4];
+					d6 = _pts2[5];
+					d7 = _pts1[6];
+					d8 = _pts2[7];
+				} else {
+					d1 = _pts1[0];
+					d2 = _pts1[1];
+					d3 = _pts1[2];
+					d4 = _pts1[3];
+					d5 = _pts1[4];
+					d6 = _pts1[5];
+					d7 = _pts1[6];
+					d8 = _pts1[7];
+				}
+
+				ctx.moveTo(d1.x, d1.y);
+				ctx.quadraticCurveTo(d2.x, d2.y, d3.x, d3.y);
+				ctx.quadraticCurveTo(d4.x, d4.y, d5.x, d5.y);
+				ctx.quadraticCurveTo(d6.x, d6.y, d7.x, d7.y);
+				ctx.quadraticCurveTo(d8.x, d8.y, d1.x, d1.y);
 			}
 			ctx.closePath();
 			ctx.fillStyle = fillColor;
@@ -1851,7 +1795,7 @@ const CIRCLE = {
 		let y = circle.y + circle.r * Math.sin(rad);
 		return { x, y };
 	},
-	createCircle(options, context) {
+	createCircle(options, context, autodraw = true) {
 		let {
 			x,
 			y,
@@ -1915,14 +1859,15 @@ const CIRCLE = {
 			len = 16;
 		}
 		graph.len = len;
+		const offsetBase = graph.r / 50;
 		const offset = {
-			startX: graph.points[0].x + random(-5, 5),
-			startY: graph.points[0].y + random(-10, 10),
-			endX: graph.points[len - 1].x + random(-5, 5),
-			endY: graph.points[len - 1].y + random(-10, 10)
+			startX: graph.points[0].x + random(-5, 5) * offsetBase,
+			startY: graph.points[0].y + random(-10, 10) * offsetBase,
+			endX: graph.points[len - 1].x + random(-5, 5) * offsetBase,
+			endY: graph.points[len - 1].y + random(-10, 10) * offsetBase
 		};
 		graph.offset = offset;
-		this.drawCir(graph);
+		if (autodraw) this.drawCir(graph);
 		return graph;
 	},
 	drawCir(cir) {

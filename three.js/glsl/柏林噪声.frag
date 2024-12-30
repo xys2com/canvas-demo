@@ -65,3 +65,17 @@ void main() {
 
     gl_FragColor = vec4(n);
 }
+// void main( ){
+//     vec2 st = gl_FragCoord.xy / u_resolution.xy;
+//     st -= .5;
+//     //st 取值为 -0.5 ~ 0.5 
+//     // st.x *= gl_FragCoord.x / gl_FragCoord.y;
+//     float r = length(st); //sqrt(st.x * st.x + st.y * st.y) 很多个圆
+//     float c = smoothstep(.5,.1, r); // < 0.28 = 1  > 0.3 = 0
+//     // gl_FragColor = vec4(.8,.2,0.3,1);
+//     vec4 color = vec4(.8,.2,0.3,1);
+//     gl_FragColor = color * c;
+//     //   gl_FragColor.rgb = color.rgb;
+//     //   gl_FragColor.a=color.a*c;
+
+// }

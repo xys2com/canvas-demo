@@ -26,7 +26,7 @@ float noise (in vec2 st) {
             (d - b) * u.x * u.y;
 }
 
-#define OCTAVES 20
+#define OCTAVES 3
 float fbm ( in vec2 _st) {
     float v = 0.0;
     float a = 0.5;
@@ -45,10 +45,10 @@ float fbm ( in vec2 _st) {
 void main() {
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
     st.x *= u_resolution.x/u_resolution.y;
-    st.x  = fbm( st - 0.05*u_time);
+    st.x  = fbm( st - 0.01*u_time);
 
     vec3 color = vec3(0);
-    color += fbm(st*3.0);
+    color += fbm(st*5.0);
 
     gl_FragColor = vec4(color,1.);
 }

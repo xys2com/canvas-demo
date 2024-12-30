@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<style>
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+		}
+		body {
+			display: flex;
+		}
+		.div-col {
+			margin-right: 5px;
+			min-height: 500px;
+			flex: 1;
+		}
+		.div-col:last-child {
+			margin-right: 0;
+		}
+		.div-item {
+			margin-bottom: 5px;
+			border: 1px solid #ccc;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 38px;
+			font-weight: bold;
+		}
+	</style>
+	<body></body>
+	<script>
+		window.$ = (e) => {
+			const els = document.querySelectorAll(e);
+			return els.length === 1 ? els[0] : els;
+		};
+		const random = function (min, max) {
+			if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+				let a = max;
+				(max = min), (min = a);
+			}
+			const r = +min % 1 != 0 || +max % 1 != 0;
+			if (r) {
+				min *= 100000000;
+				max *= 100000000;
+			}
+			return (
+				(Math.floor(Math.random() * (max - min + 1)) + min) /
+				(r ? 100000000 : 1)
+			);
+		};
+	</script>
+	<script>
+		const column = random(3, 5);
+		for (let i = 0; i < column; i++) {
+			const div = document.createElement("div");
+			div.setAttribute("class", "div-col");
+			div.setAttribute("id", `div-id-${i}`);
+			document.body.appendChild(div);
+		}
+
+		const itemCount = random(10, 30);
+		for (let i = 0; i < itemCount; i++) {
+			const pid = `#div-id-${i % column}`;
+			const dom = $(pid);
+			const div = document.createElement("div");
+			div.setAttribute("class", "div-item");
+			const h = random(150, 300);
+			div.style.height = h + "px";
+			div.innerHTML = i;
+			dom.appendChild(div);
+		}
+	</script>
+</html>

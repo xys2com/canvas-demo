@@ -11,6 +11,26 @@
 	<script src="./three.min.js"></script>
 	<script src="./OrbitControls.min.js"></script>
 	<script>
+		function f(x) {
+			return x * x - 4 * x + 3;
+		}
+		function sf(x) {
+			return (x * x * x) / 3 - x * x * 0.5 + 3 * x;
+		}
+		function sliceUnit(arr, s) {
+			let j = arr[0];
+			let v = 0;
+			while (j <= arr[1]) {
+				let _v = sf(j);
+				v += (j - arr[0]) * _v;
+
+				j += s;
+			}
+			console.log(v);
+		}
+		sliceUnit([1, 3], 0.1);
+	</script>
+	<script>
 		window.$ = (e) => {
 			let t = document.querySelectorAll(e);
 			return t.length > 1 ? t : 1 === t.length ? t[0] : void 0;

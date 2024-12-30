@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+		<input type="file" onchange="getImageData(this)" />
+	</body>
+	<script src="./color-function.js"></script>
+	<script>
+		function getImageData(input) {
+			const file = input.files[0];
+			let read = new FileReader();
+			read.readAsDataURL(file);
+			read.onload = function (e) {
+				imgUrl = this.result;
+				img = new Image();
+				img.src = imgUrl;
+				img.onload = function () {
+					showImg(img, 800, 800);
+				};
+			};
+		}
+		function showImg(img, width, height) {
+			let canvas = document.createElement("canvas");
+			canvas.width = width;
+			canvas.height = height;
+			let ctx = canvas.getContext("2d");
+			ctx.drawImage(img, 0, 0, width, height);
+			document.body.appendChild(canvas);
+
+			const rowcount = height / 20;
+			const colcount = width / 20;
+			let colors = [];
+			for (let i = 0; i < rowcount; i++) {
+				for (let j = 0; j < colcount; j++) {
+					let rn = i * 20;
+					let cn = j * 20;
+					let {
+						data: [r, g, b, a]
+					} = ctx.getImageData(rn + 10, cn + 10, 1, 1);
+					console.log(rn, cn);
+					let hex = getHex(`rgba(${r},${g},${b},${a})`);
+					console.log(hex);
+					colors.push(hex);
+				}
+			}
+			let mixc = "";
+			colors.map((c) => {
+				if (mixc) mixc = mixinColors(mixc, c);
+				else mixc = c;
+			});
+			document.body.style.background = mixc;
+		}
+	</script>
+</html>

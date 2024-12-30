@@ -5,9 +5,9 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
 
-float cloudDensity = .8; 	// overall density [0,1]
-float noisiness = 0.75; 	// overall strength of the noise effect [0,1]
-float speed = 0.08;			// controls the animation speed [0, 0.1 ish)
+float cloudDensity = .6; 	// overall density [0,1]
+float noisiness = 0.33; 	// overall strength of the noise effect [0,1]
+float speed = 0.1;			// controls the animation speed [0, 0.1 ish)
 float cloudHeight = 2.5; 	// (inverse) height of the input gradient [0,...)
 
 
@@ -136,5 +136,9 @@ void main() {
     vec3 someRandomOffset = vec3(0.1, 0.3, 0.2);
     vec2 duv = vec2(fBm(p), fBm(p + someRandomOffset)) * noisiness;
     float q = gradient(uv + duv) * cloudDensity;
-	gl_FragColor = vec4(q,q,q, 1.0);
+    vec4 color = vec4(0.7098, 0.3216, 0.6902, 1.0);
+    vec4 color2 = vec4(0.7098, 0.5529, 0.3216, q);
+    vec4 qqq = vec4(q,q,q, 1.0);
+    // vec4 mixColor = mix(qqq, 1.-uv.y);
+    gl_FragColor = qqq;
 }

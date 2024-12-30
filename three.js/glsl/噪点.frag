@@ -41,7 +41,7 @@ void main() {
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
     st.x *= u_resolution.x/u_resolution.y;
     vec3 color = vec3(1., 0.0, 0.0);
-    vec2 pos = vec2(st*5.);
+    vec2 pos = vec2(st*3.);
 
     color = vec3(snoise(pos)*0.5 + 0.5);
     gl_FragColor = vec4(color,1.0);

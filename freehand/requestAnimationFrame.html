@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body></body>
+	<script src="./e-manager.js"></script>
+	<script>
+		let eventMng = new AnimationEventBus();
+		function log() {
+			let count = 0;
+			const id = eventMng.addEvent({
+				event: () => {
+					console.log(Date.now());
+					if (count >= 150) {
+						count = 0;
+						eventMng.removeEvent(id);
+						log();
+					} else {
+						count++;
+					}
+				}
+			});
+		}
+		log();
+	</script>
+</html>

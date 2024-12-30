@@ -62,7 +62,6 @@
 			// Add FOV Fog effect to the scene. Same colour as the BG int he stylesheet.
 			scene.fog = new THREE.Fog(0xf7d9aa, 100, 950); // 线性雾 由近及远递增。与z轴反比
 
-			// Create the camera
 			aspectRatio = WIDTH / HEIGHT; // 默认宽高比就行了
 			fieldOfView = 60; // 视锥体 锤直视角
 			nearPlane = 1; // 近平面距离 => z小于该参数。不会被渲染
@@ -73,7 +72,7 @@
 				nearPlane,
 				farPlane
 			);
-			// Position the camera  相机位置
+			// 相机位置
 			camera.position.x = 0;
 			camera.position.y = 150;
 			camera.position.z = 100;
@@ -397,7 +396,7 @@
 		var AirPlane = function () {
 			this.mesh = new THREE.Object3D();
 
-			// Create the cabin
+			// 主体
 			var geomCockpit = new THREE.BoxGeometry(80, 50, 50, 1, 1, 1);
 			var matCockpit = new THREE.MeshPhongMaterial({
 				color: Colors.red,
@@ -416,7 +415,7 @@
 			cockpit.receiveShadow = true;
 			this.mesh.add(cockpit);
 
-			// Create the engine
+			// 螺旋桨
 			var geomEngine = new THREE.BoxGeometry(20, 50, 50, 1, 1, 1);
 			var matEngine = new THREE.MeshPhongMaterial({
 				color: Colors.white,
@@ -428,7 +427,7 @@
 			engine.receiveShadow = true;
 			this.mesh.add(engine);
 
-			// Create the tail
+			// 尾部
 			var geomTailPlane = new THREE.BoxGeometry(15, 20, 5, 1, 1, 1);
 			var matTailPlane = new THREE.MeshPhongMaterial({
 				color: Colors.red,
@@ -440,8 +439,8 @@
 			tailPlane.receiveShadow = true;
 			this.mesh.add(tailPlane);
 
-			// Create the wing
-			var geomSideWing = new THREE.BoxGeometry(40, 4, 150, 1, 1, 1);
+			// 机翼
+			var geomSideWing = new THREE.BoxGeometry(40, 4, 180, 1, 1, 1);
 			var matSideWing = new THREE.MeshPhongMaterial({
 				color: Colors.red,
 				shading: THREE.FlatShading
