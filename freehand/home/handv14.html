@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scrip hand v0.14</title>
+  </head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      height: 100vh;
+      padding: 6px;
+      margin: 0;
+    }
+  </style>
+  <body></body>
+  <script src="./handv0.14.js"></script>
+  <script src="../tween.js"></script>
+  <script src="../event-manager.js"></script>
+  <script src="./data.js"></script>
+  <script>
+    const PADDING = 6;
+    const WIDTH = document.body.offsetWidth;
+    const HEIGHT = document.body.offsetHeight;
+    const isStandardWidth = WIDTH > 1920 + PADDING * 2;
+    const canvasW = isStandardWidth ? 1920 : WIDTH - PADDING * 2;
+    const canvasH = HEIGHT;
+    const canvasX = isStandardWidth ? (WIDTH - 1920) / 2 : PADDING;
+
+    const textdata = textSourceData.map((e) => {
+      return {
+        category: "line",
+        path: e.map(({ x, y }) => {
+          return { x: x + canvasX + PADDING, y: y + PADDING + 10 };
+        }),
+        offset: 0,
+        double: false,
+      };
+    });
+    PIGDATA.map((e) => {
+      if (e.x) e.x = e.x + canvasX + PADDING;
+      if (e.path)
+        e.path = e.path.map((p, i) =>
+          i % 2 == 0 ? (p += canvasX + PADDING) : p
+        );
+    });
+    window.hand = new HandDraw({
+      x: 0,
+      y: 0,
+      width: WIDTH,
+      height: HEIGHT,
+      // 设置整体色
+      colors: {
+        side: "#333",
+        fill: "transparent",
+        line: "#333",
+      },
+      zIndex: 1,
+    });
+    function createLeft() {
+      // 左侧栏位
+      const fenceWidth = 200;
+      const leftbox = document.createElement("div");
+      const top = 88 + 2 * PADDING;
+      const height = HEIGHT - 88 - 3 * PADDING;
+      const itemHeight = 40;
+      hand.initLinePath({
+        path: [
+          { x: canvasX + fenceWidth, y: top },
+          { x: canvasX + fenceWidth, y: height + 88 + 2 * PADDING },
+        ],
+      });
+      hand.createRect({
+        category: "rect",
+        position: [canvasX, top, fenceWidth, height],
+        double: true, // 边线单线
+        fillType: "mix",
+        fillDeg: 165,
+        fillGap: 30,
+        clickable: false,
+        colors: { side: "transparent", line: "#f0f2", fill: "#f001" },
+      });
+      const style = {
+        position: "absolute",
+        top: `${top}px`,
+        left: `${canvasX}px`,
+        width: `${fenceWidth}px`,
+        height: `${height}px`,
+        zIndex: 2,
+      };
+      const attrs = {
+        id: "left-box",
+      };
+      for (let k in style) {
+        leftbox.style[k] = style[k];
+      }
+      for (let k in attrs) {
+        leftbox.setAttribute(k, attrs[k]);
+      }
+      const itemStyle = {
+        position: "absolute",
+        left: `${0}px`,
+        width: `${fenceWidth}px`,
+        height: `${itemHeight}px`,
+        zIndex: 3,
+        paddingLeft: "8px",
+        cursor: "pointer",
+        textAlign: "left",
+        lineHeight: `${itemHeight - 2}px`,
+      };
+      URLS.map((item, i) => {
+        const div = document.createElement("div");
+        for (let k in itemStyle) {
+          div.style[k] = itemStyle[k];
+        }
+        div.style.top = `${i * itemHeight}px`;
+        div.innerHTML = item.title;
+        div.onclick = () => {
+          const iframe = document.getElementById("iframe-box");
+          iframe.setAttribute("src", item.url);
+          // window.open(item.url);
+        };
+        leftbox.appendChild(div);
+      });
+      document.body.appendChild(leftbox);
+    }
+    function contentRight() {
+      // 右侧iframe
+      const fenceWidth = 200;
+      const iframe = document.createElement("iframe");
+      const top = 88 + 2 * PADDING;
+      const height = HEIGHT - 88 - 3 * PADDING;
+      hand.createRect({
+        category: "rect",
+        position: [canvasX + fenceWidth, top, canvasW - fenceWidth, height],
+        double: true, // 边线单线
+        fillType: "fill",
+        fillDeg: 45,
+        fillGap: 50,
+        clickable: false,
+        colors: { side: "transparent", line: "#00f2", fill: "#0f01" },
+      });
+      const attrs = {
+        id: "iframe-box",
+        frameborder: 0,
+        src: "../水球图v240115.html",
+      };
+      const style = {
+        position: "absolute",
+        top: `${top}px`,
+        left: `${canvasX + fenceWidth}px`,
+        width: `${canvasW - fenceWidth}px`,
+        padding: `${PADDING}px`,
+        height: `${height}px`,
+        // background: "#0f01",
+        zIndex: 2,
+      };
+      for (let k in style) {
+        iframe.style[k] = style[k];
+      }
+      for (let k in attrs) {
+        iframe.setAttribute(k, attrs[k]);
+      }
+      document.body.appendChild(iframe);
+    }
+    function main() {
+      // 头部边框
+      hand.createRect({
+        category: "rect",
+        position: [canvasX, PADDING, canvasW, 88],
+        double: true, // 边线单线
+        fillType: "fill",
+        clickable: false,
+      });
+      // 下方边框
+      const top = 88 + 2 * PADDING;
+      const height = HEIGHT - 88 - 3 * PADDING;
+      hand.createRect({
+        category: "rect",
+        position: [canvasX, top, canvasW, height],
+        double: true, // 边线单线
+        fillType: "fill",
+        clickable: false,
+      });
+      hand.batchCreate(textdata);
+      //
+      hand.batchCreate(PIGDATA);
+      createLeft();
+      contentRight();
+    }
+    main();
+  </script>
+</html>

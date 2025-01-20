@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    canvas {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      border: 1px solid #0ff;
+    }
+  </style>
+  <body style="margin: 0">
+    <canvas id="canvas-id" width="800" height="50" />
+  </body>
+  <script>
+    const canvas = document.getElementById("canvas-id");
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "red";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.font = "50px Arial";
+    ctx.fillText("我是一只猪还不太会写字嘿嘿嘿", 0, 28);
+  </script>
+</html>

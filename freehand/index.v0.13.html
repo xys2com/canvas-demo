@@ -1,206 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Scrip hand v0.13</title>
-	</head>
-	<style>
-		body {
-			background: #000;
-			color: #00eeffab;
-		}
-		.test-canvas {
-			border: 1px solid #fff;
-		}
-	</style>
-	<body></body>
-	<script src="./graphData.js"></script>
-	<script src="./tween.js"></script>
-	<script src="./event-manager.js"></script>
-	<script src="./handv0.13.js"></script>
-	<script>
-		const hands = new HandDraw({
-			x: 0,
-			y: 0,
-			width: 1920,
-			height: 800,
-			// 设置整体色
-			colors: {
-				side: "#fff",
-				fill: "#00eeff66",
-				line: "#c678dd"
-			},
-			zIndex: 1
-		});
-		const evtMng = new AnimationEventBus();
-		// 批量创建
-		// 返回与配置数据相同下标的图形合集
-		const graphObjects = hands.batchCreate(graphSet);
-		let lines = graphObjects[0];
-		// 矩形1
-		let polygon = graphObjects[1];
-		// 矩形2
-		let polygon2 = graphObjects[2];
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scrip hand v0.13</title>
+  </head>
+  <style>
+    body {
+      color: #00eeffab;
+      display: flex;
+      flex-direction: row-reverse;
+    }
+    .test-canvas {
+      border: 1px solid #fff;
+    }
+  </style>
+  <body>
+    <div></div>
+  </body>
+  <script src="./graphData.js"></script>
+  <script src="./tween.js"></script>
+  <script src="./event-manager.js"></script>
+  <script src="./handv0.13.js"></script>
+  <script>
+    const hands = new HandDraw({
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 800,
+      // 设置整体色
+      colors: {
+        side: "#000",
+        fill: "#00eeff66",
+        line: "#c678dd",
+      },
+      zIndex: 1,
+    });
+    const evtMng = new AnimationEventBus();
+    // 批量创建
+    // 返回与配置数据相同下标的图形合集
+    const graphObjects = hands.batchCreate(graphSet);
+    let lines = graphObjects[0];
+    // 矩形1
+    let polygon = graphObjects[1];
+    // 矩形2
+    let polygon2 = graphObjects[2];
 
-		// 三角形 -2 扫描线填充
-		let polygon32 = graphObjects[3];
-		// 五边形
-		let polygon4 = graphObjects[4];
+    // 三角形 -2 扫描线填充
+    let polygon32 = graphObjects[3];
+    // 五边形
+    let polygon4 = graphObjects[4];
 
-		// 圆形
-		let cir = graphObjects[5];
-		// 圆形
-		let cir2 = graphObjects[6];
+    // 圆形
+    let cir = graphObjects[5];
+    // 圆形
+    let cir2 = graphObjects[6];
 
-		// 线段缩放
-		// scaleLine();
-		function scaleLine() {
-			let duration = 3000;
-			let t = 0;
-			let rateStart = 1;
-			let rateVar = 1;
-			let frameCount = (duration / 1000) * 60;
+    // 线段缩放
+    // scaleLine();
+    function scaleLine() {
+      let duration = 3000;
+      let t = 0;
+      let rateStart = 1;
+      let rateVar = 1;
+      let frameCount = (duration / 1000) * 60;
 
-			const line = lines[0];
-			let evtid = evtMng.addEvent({
-				event: () => {
-					let rate = Math.tween.Elastic.easeInOut(
-						t,
-						rateStart,
-						rateVar,
-						frameCount
-					);
-					hands.updateLineInZoom(line, rate);
-					if (t >= frameCount) {
-						hands.setLineRealZoom(line);
-						evtMng.removeEvent(evtid);
-					}
-					t++;
-					hands.refresh();
-				}
-			});
-		}
+      const line = lines[0];
+      let evtid = evtMng.addEvent({
+        event: () => {
+          let rate = Math.tween.Elastic.easeInOut(
+            t,
+            rateStart,
+            rateVar,
+            frameCount
+          );
+          hands.updateLineInZoom(line, rate);
+          if (t >= frameCount) {
+            hands.setLineRealZoom(line);
+            evtMng.removeEvent(evtid);
+          }
+          t++;
+          hands.refresh();
+        },
+      });
+    }
 
-		// 线段旋转
-		rotateLine();
-		function rotateLine() {
-			let duration = 3000;
-			let t = 0;
-			let degStart = 0;
-			let degVar = 270;
-			let frameCount = (duration / 1000) * 60;
+    // 线段旋转
+    rotateLine();
+    function rotateLine() {
+      let duration = 3000;
+      let t = 0;
+      let degStart = 0;
+      let degVar = 270;
+      let frameCount = (duration / 1000) * 60;
 
-			const line = lines[0];
-			const line2 = lines[1];
-			let evtid = evtMng.addEvent({
-				event: () => {
-					let deg = Math.tween.Elastic.easeInOut(
-						t,
-						degStart,
-						degVar,
-						frameCount
-					);
-					hands.updateLineInRotate(line, deg);
-					hands.updateLineInRotate(line2, deg * 2);
-					if (t >= frameCount) {
-						evtMng.removeEvent(evtid);
-					}
-					t++;
-					hands.refresh();
-				}
-			});
-		}
+      const line = lines[0];
+      const line2 = lines[1];
+      let evtid = evtMng.addEvent({
+        event: () => {
+          let deg = Math.tween.Elastic.easeInOut(
+            t,
+            degStart,
+            degVar,
+            frameCount
+          );
+          hands.updateLineInRotate(line, deg);
+          hands.updateLineInRotate(line2, deg * 2);
+          if (t >= frameCount) {
+            evtMng.removeEvent(evtid);
+          }
+          t++;
+          hands.refresh();
+        },
+      });
+    }
 
-		// 旋转图形
-		rotateGraph();
-		function rotateGraph() {
-			let duration = random(1, 4) * 10000;
-			let t = 0;
-			let degStart = 0;
-			let degVar = random(400, 800) * 360;
-			let frameCount = (duration / 1000) * 60;
-			const PA = [polygon, polygon2, polygon32, polygon4, cir, cir2];
-			const graph = cir; //PA[random(0, PA.length - 1)];
-			const rotateType = random(0, 1);
-			let RP = null;
-			const lineAnms = Object.keys(Math.tween);
-			const anm = lineAnms[random(0, lineAnms.length - 1)];
-			console.log("---随机图形：", graph);
-			console.log("---随机时间：", `${duration / 1000} s`);
-			console.log("---随机圈数：", `${degVar / 360} `);
-			console.log("---随机线性动画：", anm);
-			console.log("---旋转方式：", rotateType ? "任意顶点旋转" : "中心旋转");
-			if (rotateType) {
-				const points = graph.points;
-				RP = points[random(0, points.length - 1)];
-			}
-			let evtid = evtMng.addEvent({
-				event: () => {
-					let deg = Math.tween[anm].easeInOut(t, degStart, degVar, frameCount);
-					hands.updateGraphRotate(graph, deg, RP);
-					if (t >= frameCount) {
-						evtMng.removeEvent(evtid);
-						rotateGraph();
-					}
-					t++;
-					hands.refresh();
-				}
-			});
-		}
+    // 旋转图形
+    rotateGraph();
+    function rotateGraph() {
+      let duration = random(1, 4) * 10000;
+      let t = 0;
+      let degStart = 0;
+      let degVar = random(400, 800) * 360;
+      let frameCount = (duration / 1000) * 60;
+      const PA = [polygon, polygon2, polygon32, polygon4, cir, cir2];
+      const graph = cir; //PA[random(0, PA.length - 1)];
+      const rotateType = random(0, 1);
+      let RP = null;
+      const lineAnms = Object.keys(Math.tween);
+      const anm = lineAnms[random(0, lineAnms.length - 1)];
+      console.log("---随机图形：", graph);
+      console.log("---随机时间：", `${duration / 1000} s`);
+      console.log("---随机圈数：", `${degVar / 360} `);
+      console.log("---随机线性动画：", anm);
+      console.log("---旋转方式：", rotateType ? "任意顶点旋转" : "中心旋转");
+      if (rotateType) {
+        const points = graph.points;
+        RP = points[random(0, points.length - 1)];
+      }
+      let evtid = evtMng.addEvent({
+        event: () => {
+          let deg = Math.tween[anm].easeInOut(t, degStart, degVar, frameCount);
+          hands.updateGraphRotate(graph, deg, RP);
+          if (t >= frameCount) {
+            evtMng.removeEvent(evtid);
+            rotateGraph();
+          }
+          t++;
+          hands.refresh();
+        },
+      });
+    }
 
-		// 改变线段/图形颜色
-		changeRectColor();
-		function changeRectColor() {
-			let colorSide = random(0, 360);
-			let colorLine = random(0, 360);
-			let colorFill = random(0, 360);
-			let lineColor = random(0, 360);
-			let evtid = evtMng.addEvent({
-				event: () => {
-					colorLine = (colorLine + random(-5, 0)) % 360;
-					colorSide = (colorSide + random(0, 3)) % 360;
-					colorFill = (colorFill + 1) % 360;
-					lineColor = (lineColor + 2) % 360;
-					hands.setGraphLinesColor(`hsl(${colorLine}, 100%, 50%)`, cir);
-					hands.setGraphSideColor(`hsl(${colorSide}, 100%, 50%)`, cir);
-					hands.setGraphFillColor(`hsl(${colorFill}, 100%, 50%)`, cir);
-					hands.setGraphLinesColor(`hsl(${colorLine}, 100%, 50%)`, polygon2);
-					hands.setGraphFillColor(`hsl(${colorFill}, 100%, 50%)`, polygon4);
-					// hands.setLinesColor(`hsl(${lineColor}, 100%, 50%)`);
-					hands.setLineColor(`hsl(${lineColor}, 100%, 50%)`, lines[0]);
-					hands.setGraphSideColor(`hsl(${colorSide}, 100%, 50%)`, polygon32);
-					hands.refresh();
-				}
-			});
-		}
+    // 改变线段/图形颜色
+    changeRectColor();
+    function changeRectColor() {
+      let colorSide = random(0, 360);
+      let colorLine = random(0, 360);
+      let colorFill = random(0, 360);
+      let lineColor = random(0, 360);
+      let evtid = evtMng.addEvent({
+        event: () => {
+          colorLine = (colorLine + random(-5, 0)) % 360;
+          colorSide = (colorSide + random(0, 3)) % 360;
+          colorFill = (colorFill + 1) % 360;
+          lineColor = (lineColor + 2) % 360;
+          hands.setGraphLinesColor(`hsl(${colorLine}, 100%, 50%)`, cir);
+          hands.setGraphSideColor(`hsl(${colorSide}, 100%, 50%)`, cir);
+          hands.setGraphFillColor(`hsl(${colorFill}, 100%, 50%)`, cir);
+          hands.setGraphLinesColor(`hsl(${colorLine}, 100%, 50%)`, polygon2);
+          hands.setGraphFillColor(`hsl(${colorFill}, 100%, 50%)`, polygon4);
+          // hands.setLinesColor(`hsl(${lineColor}, 100%, 50%)`);
+          hands.setLineColor(`hsl(${lineColor}, 100%, 50%)`, lines[0]);
+          hands.setGraphSideColor(`hsl(${colorSide}, 100%, 50%)`, polygon32);
+          hands.refresh();
+        },
+      });
+    }
 
-		// 缩放图形
-		scaleGraph();
-		function scaleGraph() {
-			let duration = 2000;
-			let t = 0;
-			let rateStart = 1; // 自1开始
-			let rateVar = 0.5; // 增长 .5
-			let frameCount = (duration / 1000) * 60;
+    // 缩放图形
+    scaleGraph();
+    function scaleGraph() {
+      let duration = 2000;
+      let t = 0;
+      let rateStart = 1; // 自1开始
+      let rateVar = 0.5; // 增长 .5
+      let frameCount = (duration / 1000) * 60;
 
-			let evtid = evtMng.addEvent({
-				event: () => {
-					let rate = Math.tween.Elastic.easeInOut(
-						t,
-						rateStart,
-						rateVar,
-						frameCount
-					);
+      let evtid = evtMng.addEvent({
+        event: () => {
+          let rate = Math.tween.Elastic.easeInOut(
+            t,
+            rateStart,
+            rateVar,
+            frameCount
+          );
 
-					hands.updateGraphZoom(cir2, rate);
-					if (t >= frameCount) {
-						evtMng.removeEvent(evtid);
-					}
-					t++;
-					hands.refresh();
-				}
-			});
-		}
-	</script>
+          hands.updateGraphZoom(cir2, rate);
+          if (t >= frameCount) {
+            evtMng.removeEvent(evtid);
+          }
+          t++;
+          hands.refresh();
+        },
+      });
+    }
+  </script>
 </html>

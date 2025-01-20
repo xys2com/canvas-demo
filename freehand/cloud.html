@@ -1,159 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>cloud</title>
-	</head>
-	<style>
-		body {
-			background: #000;
-			color: #00eeffab;
-		}
-		.test-canvas {
-			border: 1px solid #fff;
-		}
-		canvas {
-			transition: 0.016s all;
-		}
-	</style>
-	<body></body>
-	<script src="./graphData.js"></script>
-	<script src="./tween.js"></script>
-	<script src="./e-manager.js"></script>
-	<script src="./handv0.13.js"></script>
-	<script src="./color-function.js"></script>
-	<script src="./cloud.js"></script>
-	<script>
-		// 设置太空颜色
-		// const SkyColor = "#87cefa";
-		// 早上 6 - 7 => getHours() [4,5,6]
-		// 白天 8 - 17 => [7,8,9……16]
-		// 黄昏 18 - 19 => [17,18]
-		// 夜晚是 20 - 5 [0,1,2,3, 19,20,21,22,23]
-		const MTF_MN = [4, 5, 6];
-		const MTF_DT = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-		const MTF_DK = [17, 18];
-		const MTF_NT = [0, 1, 2, 3, 19, 20, 21, 22, 23];
-		const ColorGroup = { morning: {}, daytime: {}, dusk: {}, night: {} };
-		function getTimeFrame() {
-			const hours = new Date().getHours();
-			if (MTF_MN.includes(hours)) return "morning";
-			if (MTF_DT.includes(hours)) return "daytime";
-			if (MTF_DK.includes(hours)) return "dusk";
-			if (MTF_NT.includes(hours)) return "night";
-		}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cloud</title>
+  </head>
+  <style>
+    body {
+      color: #00eeffab;
+    }
+    .test-canvas {
+      border: 1px solid #fff;
+    }
+    canvas {
+      transition: 0.016s all;
+    }
+  </style>
+  <body></body>
+  <script src="./graphData.js"></script>
+  <script src="./tween.js"></script>
+  <script src="./e-manager.js"></script>
+  <script src="./handv0.13.js"></script>
+  <script src="./color-function.js"></script>
+  <script src="./cloud.js"></script>
+  <script>
+    // 设置太空颜色
+    // const SkyColor = "#87cefa";
+    // 早上 6 - 7 => getHours() [4,5,6]
+    // 白天 8 - 17 => [7,8,9……16]
+    // 黄昏 18 - 19 => [17,18]
+    // 夜晚是 20 - 5 [0,1,2,3, 19,20,21,22,23]
+    const MTF_MN = [4, 5, 6];
+    const MTF_DT = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+    const MTF_DK = [17, 18];
+    const MTF_NT = [0, 1, 2, 3, 19, 20, 21, 22, 23];
+    const ColorGroup = { morning: {}, daytime: {}, dusk: {}, night: {} };
+    function getTimeFrame() {
+      const hours = new Date().getHours();
+      if (MTF_MN.includes(hours)) return "morning";
+      if (MTF_DT.includes(hours)) return "daytime";
+      if (MTF_DK.includes(hours)) return "dusk";
+      if (MTF_NT.includes(hours)) return "night";
+    }
 
-		function testGetColors() {
-			const hours = new Date().getHours();
-			const rad = ((hours + 1) / 24) * 180 * (Math.PI / 180);
+    function testGetColors() {
+      const hours = new Date().getHours();
+      const rad = ((hours + 1) / 24) * 180 * (Math.PI / 180);
 
-			const sqrtV = 255 - 8 / Math.sqrt(1 - Math.cos(rad));
+      const sqrtV = 255 - 8 / Math.sqrt(1 - Math.cos(rad));
 
-			const sunrgb = `rgb(${Math.round(sqrtV * 0.03)},${Math.round(
-				sqrtV * 0.75
-			)},${Math.round(sqrtV * 0.97)})`;
-			const sunc = getHex(sunrgb);
-			const skyrgb = `rgb(${Math.round(sqrtV * 0.73)},${Math.round(
-				sqrtV * 0.05
-			)},${Math.round(sqrtV * 0.07)})`;
-			const skyc = getHex(skyrgb);
-			return {
-				sun: sunc,
-				sky: skyc
-			};
-		}
-		const clouds = new Clouds({
-			x: 0,
-			y: 0,
-			width: 1920,
-			height: 800,
-			// 设置整体色
-			colors: {
-				side: "#fff",
-				fill: "#00eeff66",
-				line: "#c678dd"
-			},
-			zIndex: 1
-		});
-		let CY = 800;
-		const y = random(0, CY / 2);
-		const WIDTH = 1920;
-		let baseRate = (CY - y) / CY;
-		baseRate = baseRate < 0.2 ? 0.2 : baseRate;
+      const sunrgb = `rgb(${Math.round(sqrtV * 0.03)},${Math.round(
+        sqrtV * 0.75
+      )},${Math.round(sqrtV * 0.97)})`;
+      const sunc = getHex(sunrgb);
+      const skyrgb = `rgb(${Math.round(sqrtV * 0.73)},${Math.round(
+        sqrtV * 0.05
+      )},${Math.round(sqrtV * 0.07)})`;
+      const skyc = getHex(skyrgb);
+      return {
+        sun: sunc,
+        sky: skyc,
+      };
+    }
+    const clouds = new Clouds({
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 800,
+      // 设置整体色
+      colors: {
+        side: "#fff3",
+        fill: "#f00",
+        line: "#c678dd",
+      },
+      zIndex: 1,
+    });
+    let CY = 800;
+    const y = random(0, CY / 2);
+    const WIDTH = 1920;
+    let baseRate = (CY - y) / CY;
+    baseRate = baseRate < 0.2 ? 0.2 : baseRate;
 
-		const width = random(400, 800) * baseRate;
-		const WHR = random(300, 600) / 1000;
-		const height = width * WHR;
+    const width = random(400, 800) * baseRate;
+    const WHR = random(300, 600) / 1000;
+    const height = width * WHR;
 
-		const x = random(0, WIDTH - width);
-		const {
-			canvas,
-			id: cloudId,
-			cloud
-		} = clouds.createCloud({
-			x,
-			y,
-			width: random(300, 600),
-			height,
-			colors: {
-				start: "#fff",
-				end: "#666",
-				side: "#6666"
-			}
-		});
-		const stageCtx = clouds.getCtx();
-		const evtMng = new AnimationEventBus();
-		let count = 0;
-		function mc(startX, endVar) {
-			let duration = 3000;
-			let t = 0;
-			let xStart = startX;
-			let xVar = endVar;
-			let frameCount = (duration / 1000) * 60;
-			let evtid = evtMng.addEvent({
-				event: () => {
-					const x = Math.tween.Quad.easeInOut(t, xStart, xVar, frameCount);
-					let y = Math.sin(((x % 360) * Math.PI) / 180);
-					clouds.moveCloud(cloudId, x, y + 100);
-					const { x: _x, y: _y, width: _width, height: _height } = cloud;
-					clouds.clear(stageCtx);
-					stageCtx.drawImage(canvas, _x, _y, _width, _height);
-					if (t >= frameCount) {
-						evtMng.removeEvent(evtid);
-						if (count > 10) {
-							console.log("stop");
-							return;
-						}
-						count++;
-						const sc = getHex(cloud.colors.start);
-						const ec = getHex(cloud.colors.end);
+    const x = random(0, WIDTH - width);
+    const {
+      canvas,
+      id: cloudId,
+      cloud,
+    } = clouds.createCloud({
+      x,
+      y,
+      width: random(300, 600),
+      height,
+      colors: {
+        start: "#fff",
+        end: "#666",
+        side: "#6666",
+      },
+    });
+    const stageCtx = clouds.getCtx();
+    const evtMng = new AnimationEventBus();
+    let count = 0;
+    function mc(startX, endVar) {
+      let duration = 30000;
+      let t = 0;
+      let xStart = startX;
+      let xVar = endVar;
+      let frameCount = (duration / 1000) * 60;
+      let evtid = evtMng.addEvent({
+        event: () => {
+          const x = Math.tween.Quad.easeInOut(t, xStart, xVar, frameCount);
+          let y = Math.sin(((x % 360) * Math.PI) / 180);
+          clouds.moveCloud(cloudId, x, y + 100);
+          const { x: _x, y: _y, width: _width, height: _height } = cloud;
+          clouds.clear(stageCtx);
+          stageCtx.drawImage(canvas, _x, _y, _width, _height);
+          if (t >= frameCount) {
+            evtMng.removeEvent(evtid);
+            if (count > 10) {
+              console.log("stop");
+              return;
+            }
+            count++;
+            const sc = getHex(cloud.colors.start);
+            const ec = getHex(cloud.colors.end);
 
-						let { h: sh, s: ss, l: sl } = hexToHsl(sc);
-						let { h: eh, s: es, l: el } = hexToHsl(ec);
-						sh = random(0, 360);
-						eh = random(0, 360);
-						ss = random(0, 100);
-						es = random(0, 100);
-						sl = sl + random(-5, 5);
-						sl = sl >= 100 ? 100 : sl <= 0 ? 0 : sl;
-						el = el + random(-5, 5);
-						el = el >= 100 ? 100 : el <= 0 ? 0 : el;
-						let start = `hsl(${sh}, ${ss}%, ${sl}%)`;
-						let end = `hsl(${eh}, ${es}%, ${el}%)`;
+            let { h: sh, s: ss, l: sl } = hexToHsl(sc);
+            let { h: eh, s: es, l: el } = hexToHsl(ec);
+            sh = random(0, 360);
+            eh = random(0, 360);
+            ss = random(0, 100);
+            es = random(0, 100);
+            sl = sl + random(-5, 5);
+            sl = sl >= 100 ? 100 : sl <= 0 ? 0 : sl;
+            el = el + random(-5, 5);
+            el = el >= 100 ? 100 : el <= 0 ? 0 : el;
+            let start = `hsl(${sh}, ${ss}%, ${sl}%)`;
+            let end = `hsl(${eh}, ${es}%, ${el}%)`;
 
-						clouds.setCloudColors(cloudId, { start, end });
-						let _startX = startX + endVar;
-						let _endVar = -1 * endVar;
-						// startX = startX + endVar;
-						// endVar = -1 * endVar;
-						mc(_startX, _endVar);
-					}
-					t++;
-				}
-			});
-		}
-		mc(100, 200);
-		// document.body.appendChild(canvas);
-	</script>
+            clouds.setCloudColors(cloudId, { start, end });
+            let _startX = startX + endVar;
+            let _endVar = -1 * endVar;
+            // startX = startX + endVar;
+            // endVar = -1 * endVar;
+            mc(_startX, _endVar);
+          }
+          t++;
+        },
+      });
+    }
+    mc(100, 200);
+    // document.body.appendChild(canvas);
+  </script>
 </html>
