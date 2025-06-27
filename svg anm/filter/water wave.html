@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    @import url("https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz");
+
+    body {
+      padding: 5vw;
+      font-family: "Yanone Kaffeesatz", sans-serif;
+      background-color: #212121;
+      color: #fff;
+      font-size: 1.5em;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      margin-top: 1em;
+      background: #fff;
+    }
+
+    input[type="text"] {
+      max-width: 70px;
+      font-size: 1em;
+      padding: 0.2em;
+      font-family: inherit;
+    }
+
+    label {
+      font-size: 1.5em;
+      display: block;
+      margin-bottom: 1em;
+    }
+
+    .wrapper {
+      max-width: 80%;
+    }
+  </style>
+  <body>
+    <div class="wrapper">
+      baseFrequency = "
+      <input
+        type="text"
+        value="0.01"
+        name="bfx"
+        id="bfx"
+        aria-label="baseFrequency-x"
+      />
+      <input
+        type="text"
+        value="0.4"
+        steps="0.1"
+        name="bfy"
+        id="bfy"
+        aria-label="baseFrequency-y"
+      />
+      "
+
+      <svg viewBox="0 0 180 100">
+        <filter id="noise" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence
+            baseFrequency="0.01 0.4"
+            result="NOISE"
+            numOctaves="2"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="NOISE"
+            scale="20"
+            xChannelSelector="R"
+            yChannelSelector="R"
+          ></feDisplacementMap>
+        </filter>
+
+        <image
+          xlink:href="https://images.unsplash.com/photo-1546207438-5685e45838d7?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&ixid=eyJhcHBfaWQiOjE0NTg5fQ"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          filter="url(#noise)"
+        ></image>
+
+        <!-- 		<text dx="10" dy="50" font-size="30px" font-weight="bold" filter="url(#noise)">I am distorted</text> -->
+      </svg>
+    </div>
+  </body>
+</html>
+<script>
+  (function () {
+    var bfx = document.getElementById("bfx"),
+      bfy = document.getElementById("bfy"),
+      bFSVG = document.querySelector("svg"),
+      effect = bFSVG.querySelector("feTurbulence");
+
+    bfx.addEventListener("change", updateBF);
+    bfx.addEventListener("keyup", updateBF);
+    bfy.addEventListener("change", updateBF);
+    bfy.addEventListener("keyup", updateBF);
+
+    function updateBF() {
+      let vx = bfx.value,
+        vy = bfy.value;
+
+      var val = vx + " " + vy;
+
+      effect.setAttribute("baseFrequency", val);
+    }
+  })();
+</script>

@@ -1,168 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Document</title>
-	</head>
-	<style>
-		canvas {
-			background: #000;
-		}
-	</style>
-	<body>
-		<canvas id="test"></canvas>
-	</body>
-	<script src="./event-manager.js"></script>
-	<script>
-		const EvtMg = new AnimationEventBus();
-		// 该步骤较复杂，但可以对圆、点、线、角度、弧度、三角函数有更多的思考
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    canvas {
+      background: #000;
+    }
+  </style>
+  <body>
+    <canvas id="test"></canvas>
+  </body>
+  <script src="./event-manager.js"></script>
+  <script>
+    const EvtMg = new AnimationEventBus();
+    // 该步骤较复杂，但可以对圆、点、线、角度、弧度、三角函数有更多的思考
 
-		// ! 根据某个角度计算圆的切线
-		// ! 以切点为起点 设置步进值，计算每个步进距离切线的平行线
-		// ! 再记录所有平行线与圆的交点
-		const canvas = document.getElementById("test");
-		const ctx = canvas.getContext("2d");
-		const WIDTH = 500;
-		const HEIGHT = 500;
-		canvas.width = WIDTH;
-		canvas.height = HEIGHT;
-		const stepDep = 10;
-		const arcCenter = { x: 200, y: 200 };
-		const arcRadius = 50;
-		let DEG = 0;
-		// 利用圆的方程与直线一般式计算x位置
-		function getX(x0, y0, intercept, lineslope, r) {
-			let val1 =
-				(r * r - x0 * x0 - Math.pow(intercept - y0, 2)) *
-					(1 + lineslope * lineslope) +
-				Math.pow(intercept * lineslope - x0 - y0 * lineslope, 2);
-			let x =
-				(Math.sqrt(val1) - intercept * lineslope + x0 + y0 * lineslope) /
-				(1 + lineslope * lineslope);
-			return x;
-		}
+    // ! 根据某个角度计算圆的切线
+    // ! 以切点为起点 设置步进值，计算每个步进距离切线的平行线
+    // ! 再记录所有平行线与圆的交点
+    const canvas = document.getElementById("test");
+    const ctx = canvas.getContext("2d");
+    const WIDTH = 500;
+    const HEIGHT = 500;
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    const stepDep = 10; // 将一个圆分成几段
+    const arcCenter = { x: 200, y: 200 };
+    const arcRadius = 50; // 半径
+    let DEG = 0;
+    // 利用圆的方程与直线一般式计算x位置
+    function getX(x0, y0, intercept, lineslope, r) {
+      let val1 =
+        (r * r - x0 * x0 - Math.pow(intercept - y0, 2)) *
+          (1 + lineslope * lineslope) +
+        Math.pow(intercept * lineslope - x0 - y0 * lineslope, 2);
+      let x =
+        (Math.sqrt(val1) - intercept * lineslope + x0 + y0 * lineslope) /
+        (1 + lineslope * lineslope);
+      return x;
+    }
 
-		const circle = (x, y, r) => {
-			ctx.save();
-			ctx.beginPath();
-			ctx.arc(x, y, r, 0, 2 * Math.PI);
-			ctx.strokeStyle = "#fff";
-			ctx.stroke();
-			ctx.closePath();
-			ctx.restore();
-		};
-		// 画一个点
-		const dotin = (dot, name, c = "#f00") => {
-			try {
-				ctx.save();
-				ctx.beginPath();
-				ctx.moveTo(dot.x, dot.y);
-				ctx.arc(dot.x, dot.y, 3, 0, 2 * Math.PI);
-				ctx.closePath();
-				ctx.fillStyle = c;
-				const text = name || `${dot.x.toFixed(2)},${dot.y.toFixed(2)}`;
-				ctx.fill();
-				const x =
-					dot.x <= 0 ? 10 : dot.x >= WIDTH ? WIDTH - name.length * 8 : dot.x;
-				const y = dot.y <= 0 ? 10 : dot.y >= HEIGHT ? HEIGHT - 20 : dot.y;
-				ctx.fillText(text, x, y);
-				ctx.closePath();
-				ctx.restore();
-			} catch (error) {
-				console.log(error);
-				console.log(dot);
-			}
-		};
-		// 画一条线
-		const linein = (d1, d2, c = "#f00") => {
-			ctx.save();
-			ctx.beginPath();
-			ctx.moveTo(d1.x, d1.y);
-			ctx.lineTo(d2.x, d2.y);
-			ctx.closePath();
-			ctx.strokeStyle = c;
-			ctx.stroke();
-			ctx.closePath();
-			ctx.restore();
-		};
-		// 根据角度 取圆上的一点
-		const getPointOnCircle = (deg) => {
-			var rad = deg * (Math.PI / 180);
-			var x = arcCenter.x + arcRadius * Math.cos(rad);
-			var y = arcCenter.y + arcRadius * Math.sin(rad);
-			return { x, y };
-		};
-		// 标准斜率
-		const slope = (x1, y1, x2, y2) => (y2 - y1) / (x2 - x1);
-		dotin(arcCenter, "圆心", "#0f0");
+    const circle = (x, y, r) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.strokeStyle = "#fff";
+      ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
+    };
+    // 画一个点
+    const dotin = (dot, name, c = "#f00") => {
+      try {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(dot.x, dot.y);
+        ctx.arc(dot.x, dot.y, 3, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fillStyle = c;
+        const text = name || `${dot.x.toFixed(2)},${dot.y.toFixed(2)}`;
+        ctx.fill();
+        const x =
+          dot.x <= 0 ? 10 : dot.x >= WIDTH ? WIDTH - name.length * 8 : dot.x;
+        const y = dot.y <= 0 ? 10 : dot.y >= HEIGHT ? HEIGHT - 20 : dot.y;
+        ctx.fillText(text, x, y);
+        ctx.closePath();
+        ctx.restore();
+      } catch (error) {
+        console.log(error);
+        console.log(dot);
+      }
+    };
+    // 画一条线
+    const linein = (d1, d2, c = "#f00") => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(d1.x, d1.y);
+      ctx.lineTo(d2.x, d2.y);
+      ctx.closePath();
+      ctx.strokeStyle = c;
+      ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
+    };
+    // 根据角度 取圆上的一点
+    const getPointOnCircle = (deg) => {
+      var rad = deg * (Math.PI / 180);
+      var x = arcCenter.x + arcRadius * Math.cos(rad);
+      var y = arcCenter.y + arcRadius * Math.sin(rad);
+      return { x, y };
+    };
+    // 标准斜率
+    const slope = (x1, y1, x2, y2) => (y2 - y1) / (x2 - x1);
+    dotin(arcCenter, "圆心", "#0f0");
 
-		function distanceToLine(x, y, A, B, C) {
-			var numerator = Math.abs(A * x + B * y + C);
-			var denominator = Math.sqrt(A * A + B * B);
-			var distance = numerator / denominator;
-			return distance;
-		}
-		function getCrossLine(deg) {
-			const tangencyDot = getPointOnCircle(deg);
-			// dotin(tangencyDot, "切点", "#ff0");
-			// const revDot = getCircleReverseDot(tangencyDot);
-			// const revDotx = getCircleReverseDot(tangencyDot, "x");
-			// const revDoty = getCircleReverseDot(tangencyDot, "y");
-			// dotin(revDotx, "切点-反点x", "#ff0");
-			// dotin(revDoty, "切点-反点y", "#ff0");
-			// dotin(revDot, "切点-反点", "#f0f5");
+    function distanceToLine(x, y, A, B, C) {
+      var numerator = Math.abs(A * x + B * y + C);
+      var denominator = Math.sqrt(A * A + B * B);
+      var distance = numerator / denominator;
+      return distance;
+    }
+    function getCrossLine(deg) {
+      const tangencyDot = getPointOnCircle(deg);
+      // dotin(tangencyDot, "切点", "#ff0");
+      // const revDot = getCircleReverseDot(tangencyDot);
+      // const revDotx = getCircleReverseDot(tangencyDot, "x");
+      // const revDoty = getCircleReverseDot(tangencyDot, "y");
+      // dotin(revDotx, "切点-反点x", "#ff0");
+      // dotin(revDoty, "切点-反点y", "#ff0");
+      // dotin(revDot, "切点-反点", "#f0f5");
 
-			const diameter = arcRadius * 2;
-			const count = Math.floor(diameter / stepDep);
-			const stepDeg = 180 / count;
-			let dots = [];
-			for (let i = 0; i <= count; i++) {
-				let td = getPointOnCircle(deg + stepDeg * i);
-				dotin(td, ` `, "#ff0");
-				dots.push(td);
-			}
-			if (dots.length % 2 != 0) {
-				const index = (dots.length - 1) / 2;
-				dots.splice(index, 1);
-			}
-			let lines = [];
-			let idxs = dots.length / 2;
-			for (let i = 0; i < idxs; i++) {
-				let d1 = dots[i];
-				let d2 = dots[dots.length - 1 - i];
-				lines.push([d1.x, d1.y, d2.x, d2.y]);
-			}
-			console.log(lines);
-			lines.map((line) => {
-				const [x1, y1, x2, y2] = line;
-				linein({ x: x1, y: y1 }, { x: x2, y: y2 });
-			});
-		}
-		function getCircleReverseDot({ x, y }, type = "none") {
-			let vx = x - arcCenter.x;
-			let vy = y - arcCenter.y;
+      const diameter = arcRadius * 2; // 直径
+      const count = Math.floor(diameter / stepDep); //
+      const stepDeg = 180 / count; // 每一步的角度，因为两个点位为一条线  所以 是360 / （count * 2）
+      let dots = [];
+      for (let i = 0; i <= count; i++) {
+        let td = getPointOnCircle(deg + stepDeg * i);
+        dotin(td, `${i}`, "#ff0");
+        dots.push(td);
+      } // 单数时剔除中间的那个
+      if (dots.length % 2 != 0) {
+        const index = (dots.length - 1) / 2;
+        dots.splice(index, 1);
+      }
+      let lines = [];
+      let idxs = dots.length / 2;
+      // 对称的放入点位数据
+      for (let i = 0; i < idxs; i++) {
+        let d1 = dots[i];
+        let d2 = dots[dots.length - 1 - i];
+        lines.push([d1.x, d1.y, d2.x, d2.y]);
+      }
+      lines.map((line) => {
+        const [x1, y1, x2, y2] = line;
+        linein({ x: x1, y: y1 }, { x: x2, y: y2 });
+      });
+    }
+    function getCircleReverseDot({ x, y }, type = "none") {
+      let vx = x - arcCenter.x;
+      let vy = y - arcCenter.y;
 
-			return type == "x"
-				? { x: arcCenter.x - vx, y }
-				: type == "y"
-				? { x, y: arcCenter.y - vy }
-				: { x: arcCenter.x - vx, y: arcCenter.y - vy };
-		}
-		main(45);
-		function main(deg) {
-			DEG += 1;
-			let _deg = deg || DEG % 360;
-			ctx.clearRect(0, 0, WIDTH, HEIGHT);
-			circle(arcCenter.x, arcCenter.y, arcRadius);
-			ctx.save();
-			// ctx.clip();
-			getCrossLine(_deg);
-			ctx.restore();
-		}
+      return type == "x"
+        ? { x: arcCenter.x - vx, y }
+        : type == "y"
+        ? { x, y: arcCenter.y - vy }
+        : { x: arcCenter.x - vx, y: arcCenter.y - vy };
+    }
+    main(45);
+    function main(deg) {
+      DEG += 1;
+      let _deg = deg || DEG % 360;
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      circle(arcCenter.x, arcCenter.y, arcRadius);
+      ctx.save();
+      // ctx.clip();
+      getCrossLine(_deg);
+      ctx.restore();
+    }
 
-		// let evtid = EvtMg.addEvent({
-		// 	event: main
-		// });
-	</script>
+    // let evtid = EvtMg.addEvent({
+    // 	event: main
+    // });
+  </script>
 </html>
