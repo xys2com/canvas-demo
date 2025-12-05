@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    .book {
+      perspective: 1000px; /* 创建3D空间，值越小透视感越强 */
+    }
+    .page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-origin: left center; /* 设置绕左侧边缘旋转 */
+      transform-style: preserve-3d; /* 子元素保留3D位置 */
+      transition: transform 0.6s ease; /* 添加过渡动画 */
+      backface-visibility: hidden; /* 隐藏页面背面 */
+    }
+    /* 表示页面被翻过去的状态 */
+    .page.flipped {
+      transform: rotateY(-180deg);
+    }
+  </style>
+  <body>
+    <div class="book">
+      <div class="page">Page 1 Content</div>
+      <div class="page">Page 2 Content</div>
+      <div class="page">Page 3 Content</div>
+    </div>
+  </body>
+  <script>
+    document.querySelectorAll(".page").forEach((page) => {
+      page.addEventListener("click", () => {
+        // 假设每次点击触发翻页
+        page.classList.toggle("flipped");
+      });
+    });
+  </script>
+</html>

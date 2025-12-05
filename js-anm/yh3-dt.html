@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,user-scalable=no"
+    />
+    <style type="text/css">
+      canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+    </style>
+  </head>
+  <body bgcolor="#000000">
+    <canvas id="tree"></canvas>
+    <canvas id="flower"></canvas>
+    <script src="./color-hex.js"></script>
+    <script>
+      const random = function (min, max) {
+        if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+          let a = max;
+          (max = min), (min = a);
+        }
+        const r = +min % 1 != 0 || +max % 1 != 0;
+        if (r) {
+          min *= 100000000;
+          max *= 100000000;
+        }
+        return (
+          (Math.floor(Math.random() * (max - min + 1)) + min) /
+          (r ? 100000000 : 1)
+        );
+      };
+      //两个canvas
+      let tree = document.getElementById("tree");
+      tree.width = window.innerWidth;
+      tree.height = window.innerHeight;
+      let tCtx = tree.getContext("2d");
+      let flower = document.getElementById("flower");
+      flower.width = window.innerWidth;
+      flower.height = window.innerHeight;
+      let ctx = flower.getContext("2d");
+
+      let flowerList = []; //樱花列表
+      let rootTop = window.innerHeight; //树起点
+      let flowerColor = "#ffc0cb34"; //花色
+      let flowerColorDeep = "#f19ec24d"; //花色深
+      let treeColor2 = "#ffc0cb4d"; //树枝颜色
+      let treeColor = "#eee"; //树干颜色
+      let fallList = []; //飘落樱花列表
+      let g = 0.01; //重力加速度
+      let gWind = 0.002; //风力加速度
+      let limitSpeedY = 1; //速度上限
+      let limitSpeedX = 1; //速度上限
+      const totalStep = 18;
+      // 替换原有的递归函数
+      function drawTreeIterative(startX, startY, initialDeg, maxSteps) {
+        const branches = [];
+        const stack = [];
+
+        // 初始分支入栈
+        stack.push({
+          x: startX,
+          y: startY,
+          deg: initialDeg,
+          step: maxSteps,
+          parent: null,
+        });
+
+        // 迭代处理所有分支
+        while (stack.length > 0) {
+          const current = stack.pop();
+          const step = current.step;
+
+          // 计算当前分支终点
+          const deg1 = (random(0, 100) % 2 == 0 ? 1 : -1) * random(0.01, 0.3);
+          const x1 =
+            current.x +
+            Math.cos(current.deg + deg1) *
+              (step + random(2, 5)) *
+              random(0.8, 2.4);
+          const y1 =
+            current.y +
+            (Math.sin(current.deg + deg1) *
+              (step - random(0.5, 1)) *
+              random(0.8, 2.4) +
+              maxSteps / step);
+
+          // 保存分支信息
+          branches.push({
+            startX: current.x,
+            startY: current.y,
+            endX: x1,
+            endY: y1,
+            width: (step * Math.pow(2, step / 10)) / 10,
+            step: step,
+          });
+
+          // 添加新分支到栈中
+          if (step > 1) {
+            // 主分支
+            stack.push({
+              x: x1,
+              y: y1,
+              deg: current.deg,
+              step: step - 1,
+              parent: current,
+            });
+
+            // 随机添加左右分支
+            if (step % 3 === 1 && step < 30) {
+              stack.push({
+                x: x1,
+                y: y1,
+                deg: current.deg + 0.2 + 0.3 * Math.random(),
+                step: Math.round((step - 1) / 1.13),
+                parent: current,
+              });
+            }
+
+            if (step % 3 === 0 && step < 30) {
+              stack.push({
+                x: x1,
+                y: y1,
+                deg: current.deg - 0.2 - 0.3 * Math.random(),
+                step: Math.round((step - 1) / 1.13),
+                parent: current,
+              });
+            }
+          }
+        }
+
+        return branches;
+      }
+
+      // 绘制所有分支
+      function renderBranches(branches) {
+        tCtx.beginPath();
+
+        // 先绘制所有主干
+        branches
+          .filter((b) => b.step > 5)
+          .forEach((branch) => {
+            tCtx.moveTo(branch.startX, branch.startY);
+            tCtx.lineTo(branch.endX, branch.endY);
+            tCtx.lineWidth = branch.width;
+            tCtx.strokeStyle = treeColor;
+            tCtx.stroke();
+          });
+
+        // 再绘制细枝
+        tCtx.beginPath();
+        branches
+          .filter((b) => b.step <= 5)
+          .forEach((branch) => {
+            tCtx.moveTo(branch.startX, branch.startY);
+            tCtx.lineTo(branch.endX, branch.endY);
+            tCtx.lineWidth = branch.width;
+            tCtx.strokeStyle = treeColor2;
+            tCtx.stroke();
+          });
+
+        // 添加连接点
+        branches.forEach((branch) => {
+          if (branch.step > 10) {
+            tCtx.beginPath();
+            tCtx.fillStyle = treeColor;
+            tCtx.arc(
+              branch.startX,
+              branch.startY,
+              branch.width / 2 + 1,
+              0,
+              Math.PI * 2
+            );
+            tCtx.fill();
+          }
+        });
+      }
+
+      // 初始化树
+      function initTree() {
+        const branches = drawTreeIterative(
+          tree.width / 2,
+          rootTop,
+          -Math.PI / 2,
+          totalStep
+        );
+        renderBranches(branches);
+
+        // 收集花瓣位置
+        branches
+          .filter(
+            (b) => b.step < 3 || (b.step < totalStep - 7 && Math.random() > 0.1)
+          )
+          .forEach((branch) => {
+            const color = [flowerColorDeep, flowerColor, flowerColor][
+              Math.round(Math.random() + 0.2)
+            ];
+            const r = 2 + Math.random() * 2;
+
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.arc(
+              branch.endX + Math.random() * 3,
+              branch.endY + Math.random() * 3,
+              r,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+
+            flowerList.push({
+              x: branch.endX,
+              y: branch.endY,
+              sx: Math.random() - 0.5,
+              sy: 0,
+              color: color,
+              r: r,
+              deg: 0,
+            });
+          });
+      }
+      initTree();
+    </script>
+  </body>
+</html>

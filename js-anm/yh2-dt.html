@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    canvas {
+      background: #000a;
+    }
+  </style>
+  <body></body>
+  <script>
+    const random = function (min, max) {
+      if ((arguments.length < 2 && ((max = min), (min = 0)), min > max)) {
+        let a = max;
+        (max = min), (min = a);
+      }
+      const r = +min % 1 != 0 || +max % 1 != 0;
+      if (r) {
+        min *= 100000000;
+        max *= 100000000;
+      }
+      return (
+        (Math.floor(Math.random() * (max - min + 1)) + min) /
+        (r ? 100000000 : 1)
+      );
+    };
+    const PAGE_W = 800;
+    const PAGE_H = 600;
+    const MaxStep = 32;
+    const tree = document.createElement("canvas");
+    const tCtx = tree.getContext("2d");
+    document.body.appendChild(tree);
+    tree.width = PAGE_W;
+    tree.height = PAGE_H;
+    // tCtx.arc(300, 300, 100, 0, Math.PI / 2);
+    // tCtx.fillStyle = "#0f0";
+    // tCtx.fill();
+
+    function getDeltaVal(params, key) {
+      const fun = {
+        deg: (params) => {
+          const d = (random(0, 100) % 2 == 0 ? 1 : -1) * random(0.01, 0.3);
+          const { deg } = params;
+          return deg + d;
+        },
+        poi: (params) => {
+          const { deg, step, x, y } = params;
+          const nx =
+            x + Math.cos(deg) * (step + random(2, 5)) * random(0.8, 2.4);
+          const ny =
+            y +
+            (Math.sin(deg) * (step - random(0.5, 1)) * random(0.8, 2.4) +
+              MaxStep / step);
+          return {
+            nx,
+            ny,
+          };
+        },
+      };
+      return fun[key](params);
+    }
+
+    function getBranchItem(params) {
+      const { x, y, deg, step } = params;
+      // const ndeg = ({ deg }, "deg");
+      const { nx, ny } = getDeltaVal(
+        {
+          deg,
+          step,
+          x,
+          y,
+        },
+        "poi"
+      );
+      return {
+        x,
+        y,
+        deg,
+        nx,
+        ny,
+        step,
+      };
+    }
+    class CherryBlossom {
+      constructor({ x, y }) {
+        this.poi = {
+          x: PAGE_W / 2,
+          y: PAGE_H,
+        };
+        this.step = MaxStep;
+        // 主干节点数
+        this.trunkNum = Math.floor(MaxStep / 10);
+        this.branchs = [];
+        this.createBranch(x, y);
+      }
+      createBranch(sx, sy) {
+        /* nXXX => nextXXX 下一个值
+					dXXX => deltaXXX 变化值
+				*/
+        while (this.step > 0) {
+          // 差 也是下标
+          let diff = MaxStep - this.step;
+          if (diff == 0) {
+            const deg = -Math.PI / 2; // -90°
+            const item = getBranchItem({
+              x: sx,
+              y: sy,
+              deg,
+              step: this.step,
+            });
+            this.branchs.push([item]);
+          }
+          console.log("diff", diff);
+          const levelArray = this.branchs[diff];
+          let nextArray = [];
+          for (let i = 0; i < levelArray.length; i++) {
+            // 主干
+            const preItem = levelArray[i];
+            const deg = getDeltaVal({ deg: preItem.deg }, "deg");
+            const { nx: px, ny: py } = preItem;
+            const item = getBranchItem({
+              x: px,
+              y: py,
+              deg,
+              step: this.step,
+            });
+            nextArray.push(item);
+            if (diff > this.trunkNum) {
+              if (this.step % 3 == 1) {
+                //
+                const item = getBranchItem({
+                  x: px,
+                  y: py,
+                  deg: deg + 0.2 + 0.3 * Math.random(),
+                  step: this.step,
+                });
+                nextArray.push(item);
+              }
+              if (this.step % 3 == 0) {
+                const item = getBranchItem({
+                  x: px,
+                  y: py,
+                  deg: deg - 0.2 - 0.3 * Math.random(),
+                  step: this.step,
+                });
+                nextArray.push(item);
+              }
+            }
+          }
+          this.branchs.push(nextArray);
+          this.step--;
+        }
+      }
+
+      drawBranch() {
+        // console.log(this.branchs);
+        // console.log(this.trunkNum);
+        for (let i = 0; i < this.branchs.length; i++) {
+          if (i <= this.trunkNum) {
+            const item = this.branchs[i][0];
+            const { x, y, nx, ny, step } = item;
+            tCtx.save();
+            tCtx.beginPath();
+            tCtx.moveTo(x, y);
+            tCtx.lineTo(nx, ny);
+            tCtx.lineWidth = (step * Math.pow(2, step / 10)) / 10;
+            tCtx.strokeStyle = "#fff";
+            tCtx.stroke();
+            tCtx.closePath();
+          } else {
+            const levelArray = this.branchs[i];
+            for (let j = 0; j < levelArray.length; j++) {
+              const item = levelArray[j];
+              const { x, y, nx, ny, step } = item;
+              tCtx.save();
+              tCtx.beginPath();
+              tCtx.moveTo(x, y);
+              tCtx.lineTo(nx, ny);
+              tCtx.lineWidth = (step * Math.pow(2, step / 10)) / 10;
+              tCtx.strokeStyle = "#fff";
+              tCtx.stroke();
+              tCtx.closePath();
+            }
+          }
+        }
+      }
+    }
+
+    const tr = new CherryBlossom({
+      x: PAGE_W / 2,
+      y: PAGE_H,
+    });
+    tr.drawBranch();
+  </script>
+</html>

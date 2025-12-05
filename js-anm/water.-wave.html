@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    canvas {
+      border: 1px solid #000;
+    }
+  </style>
+  <body>
+    <canvas id="canvas" />
+  </body>
+  <script>
+    const WIDTH = 800;
+    const HEIGHT = 600;
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    const amplitude = 800;
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.fillStyle = "#f00";
+    for (let y = 0; y < 600; y++) {
+      let x = amplitude * Math.sin(60 * y);
+      ctx.moveTo(x, y);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.closePath();
+    }
+  </script>
+</html>

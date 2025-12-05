@@ -91,11 +91,11 @@ void main() {
 
     // del 算子
     vec2 del = vec2(px, py);
-    vec2 change =  sin(st - u_time/10.);
+    vec2 change =  sin(st - u_time/5.);
 
     // 梯度场 向量场
-    // vec2 grad = del * noise(change) * 0.5 + 0.5 ;
-    vec2 grad = del * fbm(st) * 0.5 + 0.5;
+    vec2 grad = del * noise(change) * 0.5 + 0.5 ;
+    // vec2 grad = del * fbm(st) * 0.5 + 0.5;
     // 旋度 标量场
     float div = dot(grad, del);
     float len = length(mix(grad, vec2(div), .5));

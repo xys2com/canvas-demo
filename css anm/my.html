@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #000;
+    }
+
+    .page-flip {
+      background-image: url(https://cssdeck.com/uploads/media/items/6/6h4pDpK.jpg);
+      position: absolute;
+      padding: 40px 40px 40px 340px;
+      width: 300px;
+      height: 400px;
+      overflow: hidden;
+    }
+    #r3 {
+      -webkit-transform-origin: 1315px 500px;
+      -webkit-transform: translate(-1030px, -500px) rotate(-32deg);
+      -webkit-transition-property: -webkit-transform, -webkit-transform-origin;
+      -webkit-transition-duration: 0.5s;
+      position: absolute;
+      z-index: 2;
+    }
+    #p3 {
+      width: 1285px;
+      height: 1388px;
+      overflow: hidden;
+    }
+    #p3 > div {
+      -webkit-transform-origin: 0 0;
+      -webkit-transform: translate(1255px, 500px) rotate(-32deg);
+      -webkit-transition-property: -webkit-transform, -webkit-transform-origin;
+      -webkit-transition-duration: 0.5s;
+      -webkit-box-shadow: 0 0 11px rgba(0, 0, 0, 0.5);
+      width: 285px;
+      height: 388px;
+      background-image: url(https://cssdeck.com/uploads/media/items/6/6S8oF28.jpg);
+      overflow: hidden;
+    }
+    .page-flip:hover #r3 {
+      -webkit-transform-origin: 1570px 500px;
+      -webkit-transform: translate(-1285px, -500px) rotate(0deg);
+    }
+
+    .page-flip:hover #p3 > div {
+      -webkit-transform-origin: 0 0;
+      -webkit-transform: translate(1000px, 500px) rotate(0deg);
+    }
+  </style>
+  <body>
+    <div class="page-flip">
+      <div id="r3">
+        <div id="p3">
+          <div></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

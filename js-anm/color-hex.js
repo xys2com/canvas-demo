@@ -9,6 +9,7 @@ function rgbToHex(p) {
   const end = p.indexOf(")");
   let arr = str.substring(start, end).split(",");
   let hex = "#";
+  console.log(arr);
   arr.map((n, i) => {
     let _hex_item = i < 3 ? (+n).toString(16) : ceil(+n * 256).toString(16);
     _hex_item = preHex(_hex_item);

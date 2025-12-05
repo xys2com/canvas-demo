@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <body>
+  
+  </body>
+  <script src="./transform.js"></script>
+  <script>
+    const canvas = document.createElement("canvas");
+    canvas.width = 800;
+    canvas.height = 800;
+    const ctx = canvas.getContext("2d");
+    document.body.appendChild(canvas);
+    const BOX = {
+      x: 200,
+      y: 200,
+      w: 100,
+      h: 100,
+    };
+
+    const throttle = (cb, gap) => {
+      let timer;
+      return function () {
+        let _this = this;
+        let args = arguments;
+        if (!timer)
+          timer = setTimeout(function () {
+            timer = null;
+            cb.apply(_this, args);
+          }, gap);
+      };
+    };
+    function addDiv(x, y, w, h, c = "#f00") {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + w, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x, y + h);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = "#f00";
+      ctx.stroke();
+      ctx.closePath();
+    }
+    function dot(x, y) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = "#F00";
+      ctx.fill();
+    }
+    // 矩阵乘法
+    function matrixMult(rate, cx, cy) {
+      const {x,y,w,h} = BOX
+      // 变换的参照点位xy 目前设置中心点为参照点
+      // const cx = x + w ; 
+      // const cy = y + h ;
+      dot(cx, cy);
+      
+      // 整体缩放后 所需要平移的距离
+      const mx = cx * (1 - rate) 
+      const my = cy * (1 - rate)
+
+      const box = [
+        x, y, 1, 1,
+        x + w, y, 1, 1,
+        x + w,  y + h, 1, 1,
+        x, y + h, 1, 1,
+      ];
+      const rbox = [
+        rate, 0, 0, 0,
+        0, rate, 0, 0,
+        0, 0, 1, 0, 
+        mx, my, 0, 1];
+      const now = multiply(rbox, box);
+      return now;
+    }
+    // const tar = matrixMult( 2);
+    // addDiv(box.x, box.y, box.w, box.h);
+    // addDiv(tar[0], tar[1], tar[4] - tar[0], tar[9] - tar[1]);
+
+    let rate = 1
+    canvas.addEventListener('mousewheel', (e) => {
+      ctx.clearRect(0,0,canvas.width, canvas.height)
+      const {deltaY,clientX,clientY} = e
+      rate  += (deltaY < 0 ? -0.1 : 0.1)
+      const tar = matrixMult(rate, clientX, clientY)
+      addDiv(BOX.x, BOX.y, BOX.w, BOX.h);
+      addDiv(tar[0], tar[1], tar[4] - tar[0], tar[9] - tar[1]);
+    })
+    canvas.addEventListener('mousemove', (e) => {
+
+      const {clientX,clientY} = e
+      // const {x,y,w,h} = BOX
+      // const p = [{x, y}, {x: x + w, y}, {x:x+w, y: y+h}, {x, y:y+h}]
+      // const isIn = inPolygon({x: clientX, y: clientY}, p)
+      // if(!isIn) return
+      ctx.clearRect(0,0,canvas.width, canvas.height)
+      const tar = matrixMult(rate, clientX, clientY)
+      addDiv(BOX.x, BOX.y, BOX.w, BOX.h);
+      addDiv(tar[0], tar[1], tar[4] - tar[0], tar[9] - tar[1]);
+    })
+  </script>
+</html>

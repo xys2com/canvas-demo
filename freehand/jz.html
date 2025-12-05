@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      height: 100vh;
+      width: 100vw;
+    }
+  </style>
+  <body></body>
+  <script>
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = document.body.offsetWidth;
+    canvas.height = document.body.offsetHeight;
+    document.body.appendChild(canvas);
+    let baseX = 50;
+    let baseY = 50;
+    const dot = (x, y) => {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, 3, 0, 2 * Math.PI);
+      ctx.fillStyle = "#00f";
+      ctx.fill();
+      ctx.closePath();
+    };
+    const house = [
+      {
+        x: 0,
+        y: 0,
+      },
+      {
+        x: 2500,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: 900,
+      },
+      {
+        x: 800,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: 1570,
+      },
+      {
+        x: -3300,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: -2470,
+      },
+    ];
+    house.forEach(({ x, y }, i) => {
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      baseX += x / 4;
+      baseY += y / 4;
+      ctx.lineTo(baseX, baseY);
+      ctx.strokeStyle = "#f00";
+      ctx.stroke();
+      ctx.closePath();
+    });
+    baseX = 50;
+    baseY = 50;
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.arc(baseX, baseY, 1000 / 4, 0, Math.PI / 2);
+    ctx.fillStyle = "#f003";
+    ctx.fill();
+    ctx.closePath();
+    baseY = 50 + (2470 - 1200) / 4;
+    const bed = [
+      {
+        x: 0,
+        y: 0,
+      },
+      {
+        x: 2000,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: 1200,
+      },
+      {
+        x: -2000,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: -1200,
+      },
+    ];
+    bed.forEach(({ x, y }, i) => {
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      baseX += x / 4;
+      baseY += y / 4;
+      ctx.lineTo(baseX, baseY);
+      ctx.strokeStyle = "#0ff";
+      ctx.stroke();
+      ctx.closePath();
+    });
+    baseX = 50;
+    baseY = 50;
+
+    baseX = 50 + (2500 - 1600) / 4;
+    const desk = [
+      {
+        x: 0,
+        y: 0,
+      },
+      {
+        x: 1600,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: 600,
+      },
+      {
+        x: -1600,
+        y: 0,
+      },
+      {
+        x: 0,
+        y: -600,
+      },
+    ];
+    desk.forEach(({ x, y }, i) => {
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      baseX += x / 4;
+      baseY += y / 4;
+      ctx.lineTo(baseX, baseY);
+      ctx.strokeStyle = "#f0f3";
+      ctx.stroke();
+      ctx.closePath();
+    });
+    baseX = 50;
+    baseY = 50;
+  </script>
+</html>

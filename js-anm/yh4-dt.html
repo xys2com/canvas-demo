@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <canvas id="treeCanvas"></canvas>
+  </body>
+  <script>
+    // 配置参数
+    const config = {
+      maxOrder: 6, // 最大分枝级数
+      branchRatio: 3, // 分枝比 (R)
+      lengthRatio: 2, // 长度比 (r)
+      diameterRatio: 1.4, // 直径比 (f)
+      diameterVariance: 0.1, // 新增直径变化随机因子
+      initialLength: 100, // 第一级分枝长度
+      initialDiameter: 15, // 第一级分枝直径
+      angleRange: Math.PI / 4, // 分枝角度范围
+      color: "#5E2D04", // 树干颜色
+    };
+
+    // 初始化Canvas
+    const canvas = document.getElementById("treeCanvas");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext("2d");
+
+    // 调整窗口大小时重绘
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drawTree();
+    });
+
+    // 树枝类
+    class Branch {
+      constructor(x, y, length, diameter, angle, order) {
+        this.x = x;
+        this.y = y;
+        this.length = length;
+        this.diameter = diameter;
+        this.angle = angle;
+        this.order = order;
+        this.children = [];
+        this.jointDiameter = diameter; // 连接处直径
+      }
+
+      // 绘制树枝
+      draw(ctx) {
+        const endX = this.x + this.length * Math.cos(this.angle);
+        const endY = this.y + this.length * Math.sin(this.angle);
+
+        // 使用渐变线宽实现自然过渡
+        const gradient = ctx.createLinearGradient(this.x, this.y, endX, endY);
+        gradient.addColorStop(0, config.color);
+        gradient.addColorStop(1, config.tipColor || config.color);
+
+        ctx.beginPath();
+        ctx.lineWidth = this.diameter;
+        ctx.strokeStyle = config.color;
+        ctx.moveTo(this.x, this.y);
+        // ctx.lineCap = "round";
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        // 在连接处绘制平滑过渡
+        // if (this.children.length > 0) {
+        //   ctx.beginPath();
+        //   ctx.arc(endX, endY, this.jointDiameter * 0.8, 0, Math.PI * 2);
+        //   ctx.fillStyle = config.color;
+        //   ctx.fill();
+        // }
+
+        // 绘制子枝
+        this.children.forEach((child) => child.draw(ctx));
+      }
+
+      // 创建子枝（根据霍顿定律）
+      createChildren() {
+        if (this.order >= config.maxOrder) return;
+
+        // 计算子枝数量（霍顿分枝数量定律）
+        // 修改createChildren方法中的子枝数量计算
+        // 更自然的子枝数量计算
+        const childCount =
+          this.order === 0
+            ? config.branchRatio
+            : Math.floor(config.branchRatio * (0.7 + Math.random() * 0.6));
+
+        // 计算子枝参数（霍顿长度和直径定律）
+        const childLength = this.length / config.lengthRatio;
+        const childDiameter = this.diameter / config.diameterRatio;
+
+        // 创建子枝
+        for (let i = 0; i < childCount; i++) {
+          // 随机角度变化
+          const angleVariation = (Math.random() - 0.5) * config.angleRange * 2;
+          const childAngle = this.angle + angleVariation;
+
+          const endX = this.x + this.length * Math.cos(this.angle);
+          const endY = this.y + this.length * Math.sin(this.angle);
+
+          const child = new Branch(
+            endX,
+            endY,
+            childLength,
+            childDiameter,
+            childAngle,
+            this.order + 1
+          );
+
+          child.createChildren();
+          this.children.push(child);
+        }
+      }
+    }
+
+    // 绘制整棵树
+    function drawTree() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 创建树干（第0级分枝）
+      const trunk = new Branch(
+        canvas.width / 2,
+        canvas.height,
+        config.initialLength,
+        config.initialDiameter,
+        -Math.PI / 2,
+        0
+      );
+
+      console.log("drawTree");
+      // 创建所有子枝
+      trunk.createChildren();
+
+      // 绘制整棵树
+      trunk.draw(ctx);
+    }
+
+    // 初始绘制
+    drawTree();
+
+    // 添加交互：点击重新生成树
+    canvas.addEventListener("click", () => {
+      // 随机调整一些参数
+      config.branchRatio = 2 + Math.random() * 2; // 2-4
+      config.lengthRatio = 1.5 + Math.random() * 1; // 1.5-2.5
+      config.diameterRatio = 1.5 + Math.random() * 1; // 1.5-2.5
+      config.angleRange = Math.PI / 6 + (Math.random() * Math.PI) / 6; // π/6-π/3
+
+      drawTree();
+    });
+  </script>
+</html>
